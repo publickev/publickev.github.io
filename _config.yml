@@ -6,10 +6,10 @@
 name: Kevin Zhang
 
 # Short bio or description (displayed in the header)
-description: '@kevinwzhang' #'publickev.com'
+description: '@publickev' #'@kevinwzhang'
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
-avatar: https://raw.githubusercontent.com/kevwzhang/kevwzhang.github.io/master/images/bitmoji_square_transparent.png
+avatar: https://raw.githubusercontent.com/publickev/publickev.github.io/master/images/bitmoji_square_transparent.png
 #avatar: https://raw.githubusercontent.com/barryclark/jekyll-now/master/images/jekyll-logo.png
 #
 # Flags below are optional
@@ -22,7 +22,7 @@ footer-links:
   facebook:
   flickr:
   github: #barryclark/jekyll-now
-  instagram: kevinwzhang
+  instagram: publickev
   linkedin: kevwz
   pinterest:
   rss: # just type anything here for a working RSS icon
