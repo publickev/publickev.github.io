@@ -45,7 +45,7 @@
         let daysPassed = (today - startOfYear) / (24 * 60 * 60 * 1000);
         let pctComplete = (daysPassed / totalDaysInYear) * 100;
 
-        document.write(`Year ${today.getFullYear()} is already ${pctComplete.toFixed(10)}% complete.<br>`);
+        document.write(`Year ${today.getFullYear()} is already ${pctComplete.toFixed(2)}% complete.<br>`);
 
         let birthDate = new Date(1998, 0, 1);
         let deathDate = new Date(2078, 0, 1);
