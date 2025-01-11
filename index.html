@@ -20,6 +20,7 @@
         }
     </style>
 </head>
+
 <div class="aligned">
     <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
     <p>
@@ -32,13 +33,33 @@
         <a href="https://github.com/kevwzhang">kevwzhang</a></span>
     </p>
 </div>
-<br>
 <!-- End header copy -->
+
+<div>
+    <script type="text/javascript">
+        let today = new Date();
+        let startOfYear = new Date(today.getFullYear(), 0, 1);
+        let endOfYear = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+        let totalDaysInYear = (endOfYear - startOfYear) / (24 * 60 * 60 * 1000);
+        let daysPassed = (today - startOfYear) / (24 * 60 * 60 * 1000);
+        let pctComplete = (daysPassed / totalDaysInYear) * 100;
+
+        document.write(`Year ${today.getFullYear()} is already ${pctComplete.toFixed(10)}% complete.<br>`);
+
+        let birthDate = new Date(1998, 0, 1);
+        let deathDate = new Date(2078, 0, 1);
+        let totalDaysOfLife = (deathDate - birthDate) / (24 * 60 * 60 * 1000);
+        let daysLeft = (deathDate - today) / (24 * 60 * 60 * 1000);
+        let lifeLeft = (daysLeft / totalDaysOfLife) * 100;
+
+        document.write(`There's only <b style='color:red;'>${lifeLeft.toFixed(1)}%</b> of life left to live.`);
+    </script>
+</div>
 
 <body>
     <ul>
         <li><a href="docs/resume_publickev.pdf">Résumé</a></li>
-        <li><a href="https://year-progress-bar.pages.dev/">2024 is ticking down...</a></li>
         <li><a href="library.html">Digital Library</a></li>
         <li><a href="finance.html">Finance</a></li>
     </ul>
