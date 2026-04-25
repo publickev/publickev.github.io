@@ -1,53 +1,131 @@
 <!DOCTYPE html>
-<html>
-
-<!-- Copy this header and style formatting to every new webpage -->
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="images/bitmoji_square_transparent.png">
-    <title>Kevin Zhang</title>
-    <style>
-        .aligned {
-            display: flex;
-            align-items: center;
-        }
-        span {
-            padding: 10px;
-        }
-        body {
-            background-color: #DEDBC6;
-            font-family: Helvetica;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>Japan — Kevin Zhang</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<div class="aligned">
-    <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
-    <p>
-        <span style="font-size:35px;line-height:45px"><b><a href="index.html" style="color: #000000; text-decoration: none;">Kevin Zhang</a></b></span><br>
-        <span style="line-height:28px"><img src="https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico" width="15">
-        <a href="https://www.instagram.com/kevinwzhang">kevinwzhang</a></span><br>
-        <span style="line-height:28px"><img src="https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8" width="15">
-        <a href="https://www.linkedin.com/in/kevwz/">in/kevwz</a></span><br>
-        <span style="line-height:28px"><img src="https://github.githubassets.com/favicons/favicon.svg" width="15">
-        <a href="https://github.com/kevwzhang">kevwzhang</a></span>
-    </p>
-</div>
-<br>
-<!-- End header copy -->
-
 <body>
-    <ul>
-        <li><a href="https://jp.usembassy.gov/services/welcomebacktojapan/">US Embassy & Consulates in Japan</a></li>
-        <li><a href="https://www.jreast.co.jp/en/multi/pass/suica.html">Suica</a> <a href="https://support.apple.com/en-us/108772">Apple Wallet</a></li>
-        <li><a href="https://www.smart-ex.jp/en/">Shinkansen</a></li>
-        <li><a href="https://www.camellia-line.co.jp/">Camellia Line</a> <a href="https://www.camellia-line.co.jp/wp-content/uploads/2025/04/en.pdf">(pamphlet)</a></li>
-        <li><a href="https://www.trypocari.com">Pocari Sweat</a></li>
-        <li>Ukon No Chikara</li>
-        <li><a href="https://matsusaka-projects.com/english/">Matsusaka Beef</a></li>
-        <li><a href="https://www.ichiranusa.com/">Ichiran</a></li>
-        <li><a href="https://www.tatsunoya.net/">Tatsunoya</a></li>
-        <li><a href="https://www.bratto.co.jp/">BraTTo</a></li>
-    </ul>
-</body>
+  <script src="header.js"></script>
 
+  <main>
+    <a href="index.html" class="back-link">← Back</a>
+    <h1 class="page-title">Japan</h1>
+    <p class="page-subtitle">Transit, food, and things I don't want to forget.</p>
+
+    <p class="section-label">Logistics</p>
+    <div class="link-grid">
+      <a href="https://jp.usembassy.gov/services/welcomebacktojapan/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">US Embassy & Consulates in Japan</div>
+          <div class="link-card-desc">Emergency contacts & services</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <div class="link-card-group">
+        <a href="https://www.jreast.co.jp/en/multi/pass/suica.html"
+           class="link-card" target="_blank" rel="noopener">
+          <div>
+            <div class="link-card-label">Suica Card</div>
+            <div class="link-card-desc">IC card for trains & convenience stores</div>
+          </div>
+          <span class="link-card-arrow">↗</span>
+        </a>
+        <a href="https://support.apple.com/en-us/108772"
+           class="link-card link-card-secondary" target="_blank" rel="noopener">
+          <div>
+            <div class="link-card-label">Suica on Apple Wallet</div>
+            <div class="link-card-desc">Add to iPhone — no physical card needed</div>
+          </div>
+          <span class="link-card-arrow">↗</span>
+        </a>
+      </div>
+      <a href="https://www.smart-ex.jp/en/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Shinkansen (Smart EX)</div>
+          <div class="link-card-desc">Book bullet train tickets online</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <div class="link-card-group">
+        <a href="https://www.camellia-line.co.jp/"
+           class="link-card" target="_blank" rel="noopener">
+          <div>
+            <div class="link-card-label">Camellia Line</div>
+            <div class="link-card-desc">Ferry Osaka ↔ Fukuoka</div>
+          </div>
+          <span class="link-card-arrow">↗</span>
+        </a>
+        <a href="https://www.camellia-line.co.jp/wp-content/uploads/2025/04/en.pdf"
+           class="link-card link-card-secondary" target="_blank" rel="noopener">
+          <div>
+            <div class="link-card-label">Camellia Line Pamphlet</div>
+            <div class="link-card-desc">English PDF — schedules & pricing</div>
+          </div>
+          <span class="link-card-arrow">↗</span>
+        </a>
+      </div>
+    </div>
+
+    <p class="section-label">Recovery</p>
+    <div class="link-grid">
+      <a href="https://www.trypocari.com"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Pocari Sweat</div>
+          <div class="link-card-desc">Best electrolyte drink — find it everywhere</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <div class="link-card" style="cursor:default;">
+        <div>
+          <div class="link-card-label">Ukon No Chikara</div>
+          <div class="link-card-desc">Turmeric hangover drink — convenience stores</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-label">Food</p>
+    <div class="link-grid">
+      <a href="https://matsusaka-projects.com/english/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Matsusaka Beef</div>
+          <div class="link-card-desc">The other wagyu — Mie Prefecture</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.ichiranusa.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Ichiran</div>
+          <div class="link-card-desc">Solo ramen booths · tonkotsu</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.tatsunoya.net/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Tatsunoya</div>
+          <div class="link-card-desc">Hakata-style ramen</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.bratto.co.jp/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">BraTTo</div>
+          <div class="link-card-desc">Italian-Japanese fusion</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+</body>
 </html>

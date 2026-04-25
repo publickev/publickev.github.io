@@ -1,47 +1,61 @@
 <!DOCTYPE html>
-<html>
-
-<!-- Copy this header and style formatting to every new webpage -->
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="images/bitmoji_square_transparent.png">
-    <title>Kevin Zhang</title>
-    <style>
-        .aligned {
-            display: flex;
-            align-items: center;
-        }
-        span {
-            padding: 10px;
-        }
-        body {
-            background-color: #DEDBC6;
-            font-family: Helvetica;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>China — Kevin Zhang</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<div class="aligned">
-    <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
-    <p>
-        <span style="font-size:35px;line-height:45px"><b><a href="index.html" style="color: #000000; text-decoration: none;">Kevin Zhang</a></b></span><br>
-        <span style="line-height:28px"><img src="https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico" width="15">
-        <a href="https://www.instagram.com/kevinwzhang">kevinwzhang</a></span><br>
-        <span style="line-height:28px"><img src="https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8" width="15">
-        <a href="https://www.linkedin.com/in/kevwz/">in/kevwz</a></span><br>
-        <span style="line-height:28px"><img src="https://github.githubassets.com/favicons/favicon.svg" width="15">
-        <a href="https://github.com/kevwzhang">kevwzhang</a></span>
-    </p>
-</div>
-<br>
-<!-- End header copy -->
-
 <body>
-    <ul>
-        <li><a href="https://apps.apple.com/us/app/alipay-simplify-your-life/id333206289">Alipay</a></li>
-        <li><a href="https://apps.apple.com/us/app/wechat/id414478124">WeChat</a></li>
-        <li><a href="https://apps.apple.com/us/app/amap-global/id461703208">AMap</a></li>
-        <li><a href="https://www.airalo.com/">Airalo</a></li>
-    </ul>
-</body>
+  <script src="header.js"></script>
 
+  <main>
+    <a href="index.html" class="back-link">← Back</a>
+    <h1 class="page-title">China</h1>
+    <p class="page-subtitle">Essential apps and connectivity before you land.</p>
+
+    <p class="section-label">Apps to Download First</p>
+    <div class="link-grid">
+      <a href="https://apps.apple.com/us/app/alipay-simplify-your-life/id333206289"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Alipay</div>
+          <div class="link-card-desc">Mobile payments — essential everywhere</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://apps.apple.com/us/app/wechat/id414478124"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">WeChat</div>
+          <div class="link-card-desc">Messaging, payments, everything</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://apps.apple.com/us/app/amap-global/id461703208"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">AMap (高德地图)</div>
+          <div class="link-card-desc">Maps that actually work in China</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+
+    <p class="section-label">Connectivity</p>
+    <div class="link-grid">
+      <a href="https://www.airalo.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Airalo</div>
+          <div class="link-card-desc">eSIM data plans — buy before you fly</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+</body>
 </html>

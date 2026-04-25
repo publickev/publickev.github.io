@@ -1,48 +1,69 @@
 <!DOCTYPE html>
-<html>
-
-<!-- Copy this header and style formatting to every new webpage -->
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="images/bitmoji_square_transparent.png">
-    <title>Kevin Zhang</title>
-    <style>
-        .aligned {
-            display: flex;
-            align-items: center;
-        }
-        span {
-            padding: 10px;
-        }
-        body {
-            background-color: #DEDBC6;
-            font-family: Helvetica;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>Iceland — Kevin Zhang</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<div class="aligned">
-    <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
-    <p>
-        <span style="font-size:35px;line-height:45px"><b><a href="index.html" style="color: #000000; text-decoration: none;">Kevin Zhang</a></b></span><br>
-        <span style="line-height:28px"><img src="https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico" width="15">
-        <a href="https://www.instagram.com/kevinwzhang">kevinwzhang</a></span><br>
-        <span style="line-height:28px"><img src="https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8" width="15">
-        <a href="https://www.linkedin.com/in/kevwz/">in/kevwz</a></span><br>
-        <span style="line-height:28px"><img src="https://github.githubassets.com/favicons/favicon.svg" width="15">
-        <a href="https://github.com/kevwzhang">kevwzhang</a></span>
-    </p>
-</div>
-<br>
-<!-- End header copy -->
-
 <body>
-    <ul>
-        <li><a href="https://www.zerocar.is/">Zero Car</a></li>
-        <li><a href="https://www.bluecarrental.is/">Blue Car Rental</a></li>
-        <li><a href="https://maps.app.goo.gl/UN6XxEqrvquDtBQA8">Skógafoss</a></li>
-        <li><a href="https://maps.app.goo.gl/QSJfC7mrdbk5F4GB8">Seljalandsfoss</a></li>
-        <li><a href="https://maps.app.goo.gl/p6EM73grfdKHGxkV6">Fjaðrárgljúfur</a></li>
-    </ul>
-</body>
+  <script src="header.js"></script>
 
+  <main>
+    <a href="index.html" class="back-link">← Back</a>
+    <h1 class="page-title">Iceland</h1>
+    <p class="page-subtitle">Car rentals, waterfalls, and the Ring Road.</p>
+
+    <p class="section-label">Getting Around</p>
+    <div class="link-grid">
+      <a href="https://www.zerocar.is/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Zero Car</div>
+          <div class="link-card-desc">EV car rental in Iceland</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.bluecarrental.is/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Blue Car Rental</div>
+          <div class="link-card-desc">Budget-friendly car rental</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+
+    <p class="section-label">Places</p>
+    <div class="link-grid">
+      <a href="https://maps.app.goo.gl/UN6XxEqrvquDtBQA8"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Skógafoss</div>
+          <div class="link-card-desc">Iconic 60m waterfall on the south coast</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://maps.app.goo.gl/QSJfC7mrdbk5F4GB8"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Seljalandsfoss</div>
+          <div class="link-card-desc">Walk behind the waterfall</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://maps.app.goo.gl/p6EM73grfdKHGxkV6"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Fjaðrárgljúfur</div>
+          <div class="link-card-desc">Dramatic canyon in South Iceland</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+</body>
 </html>

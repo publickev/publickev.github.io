@@ -1,71 +1,99 @@
 <!DOCTYPE html>
-<html>
-
-<!-- Copy this header and style formatting to every new webpage -->
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="images/bitmoji_square_transparent.png">
-    <title>Kevin Zhang</title>
-    <style>
-        .aligned {
-            display: flex;
-            align-items: center;
-        }
-        span {
-            padding: 10px;
-        }
-        body {
-            background-color: #DEDBC6;
-            font-family: Helvetica;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>Kevin Zhang</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<div class="aligned">
-    <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
-    <p>
-        <span style="font-size:35px;line-height:45px"><b><a href="index.html" style="color: #000000; text-decoration: none;">Kevin Zhang</a></b></span><br>
-        <span style="line-height:28px"><img src="https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico" width="15">
-        <a href="https://www.instagram.com/kevinwzhang">kevinwzhang</a></span><br>
-        <span style="line-height:28px"><img src="https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8" width="15">
-        <a href="https://www.linkedin.com/in/kevwz/">in/kevwz</a></span><br>
-        <span style="line-height:28px"><img src="https://github.githubassets.com/favicons/favicon.svg" width="15">
-        <a href="https://github.com/kevwzhang">kevwzhang</a></span>
-    </p>
-</div>
-<!-- End header copy -->
-
-<div>
-    <script type="text/javascript">
-        let today = new Date();
-        let startOfYear = new Date(today.getFullYear(), 0, 1);
-        let endOfYear = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
-
-        let totalDaysInYear = (endOfYear - startOfYear) / (24 * 60 * 60 * 1000);
-        let daysPassed = (today - startOfYear) / (24 * 60 * 60 * 1000);
-        let pctComplete = (daysPassed / totalDaysInYear) * 100;
-
-        document.write(`Year ${today.getFullYear()} is already ${pctComplete.toFixed(2)}% complete.<br>`);
-
-        let birthDate = new Date(1998, 0, 1);
-        let deathDate = new Date(2078, 0, 1);
-        let totalDaysOfLife = (deathDate - birthDate) / (24 * 60 * 60 * 1000);
-        let daysLeft = (deathDate - today) / (24 * 60 * 60 * 1000);
-        let lifeLeft = (daysLeft / totalDaysOfLife) * 100;
-
-        document.write(`There's only <b style='color:red;'>${lifeLeft.toFixed(1)}%</b> of life left to live.`);
-    </script>
-</div>
-
 <body>
-    <ul>
-        <li><a href="docs/resume_publickev.pdf">Résumé</a></li>
-        <li><a href="library.html">Digital Library</a></li>
-        <li><a href="finance.html">Finance</a></li>
-        <li><a href="japan.html">Japan</a></li>
-        <li><a href="iceland.html">Iceland</a></li>
-        <li><a href="china.html">China</a></li>
-        <li><a href="career.html">Career</a></li>
-    </ul>
-</body>
+  <script src="header.js"></script>
 
+  <main>
+    <div class="year-stat" id="year-stat"></div>
+    <div class="life-stat" id="life-stat"></div>
+
+    <p class="section-label">Documents</p>
+    <div class="link-grid">
+      <a href="docs/resume_publickev.pdf" class="link-card" target="_blank">
+        <div>
+          <div class="link-card-label">Résumé</div>
+          <div class="link-card-desc">Latest version</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="library.html" class="link-card">
+        <div>
+          <div class="link-card-label">Digital Library</div>
+          <div class="link-card-desc">Notes & notebooks</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+    </div>
+
+    <p class="section-label">Money</p>
+    <div class="link-grid">
+      <a href="finance.html" class="link-card">
+        <div>
+          <div class="link-card-label">Finance</div>
+          <div class="link-card-desc">Tax brackets, cashback categories</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+    </div>
+
+    <p class="section-label">Travel</p>
+    <div class="link-grid">
+      <a href="japan.html" class="link-card">
+        <div>
+          <div class="link-card-label">Japan</div>
+          <div class="link-card-desc">Transit, food, essentials</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+      <a href="iceland.html" class="link-card">
+        <div>
+          <div class="link-card-label">Iceland</div>
+          <div class="link-card-desc">Car rentals, waterfalls</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+      <a href="china.html" class="link-card">
+        <div>
+          <div class="link-card-label">China</div>
+          <div class="link-card-desc">Apps & connectivity</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+    </div>
+
+    <p class="section-label">Work</p>
+    <div class="link-grid">
+      <a href="career.html" class="link-card">
+        <div>
+          <div class="link-card-label">Career</div>
+          <div class="link-card-desc">Job boards & resources</div>
+        </div>
+        <span class="link-card-arrow">→</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+
+  <script>
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const endOfYear = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+    const pct = ((today - startOfYear) / (endOfYear - startOfYear) * 100).toFixed(2);
+    document.getElementById('year-stat').textContent = `${today.getFullYear()} is ${pct}% complete.`;
+
+    const birth = new Date(1998, 0, 1);
+    const death = new Date(2078, 0, 1);
+    const lifeLeft = ((death - today) / (death - birth) * 100).toFixed(1);
+    document.getElementById('life-stat').innerHTML =
+      `Only <strong>${lifeLeft}%</strong> of life left to live.`;
+  </script>
+</body>
 </html>

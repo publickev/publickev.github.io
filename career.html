@@ -1,48 +1,65 @@
 <!DOCTYPE html>
-<html>
-
-<!-- Copy this header and style formatting to every new webpage -->
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="images/bitmoji_square_transparent.png">
-    <title>Kevin Zhang</title>
-    <style>
-        .aligned {
-            display: flex;
-            align-items: center;
-        }
-        span {
-            padding: 10px;
-        }
-        body {
-            background-color: #DEDBC6;
-            font-family: Helvetica;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>Career — Kevin Zhang</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<div class="aligned">
-    <a href="index.html"><img src="images/bitmoji_square_transparent.png" width="120"></a>
-    <p>
-        <span style="font-size:35px;line-height:45px"><b><a href="index.html" style="color: #000000; text-decoration: none;">Kevin Zhang</a></b></span><br>
-        <span style="line-height:28px"><img src="https://static.cdninstagram.com/rsrc.php/y4/r/QaBlI0OZiks.ico" width="15">
-        <a href="https://www.instagram.com/kevinwzhang">kevinwzhang</a></span><br>
-        <span style="line-height:28px"><img src="https://static.licdn.com/aero-v1/sc/h/akt4ae504epesldzj74dzred8" width="15">
-        <a href="https://www.linkedin.com/in/kevwz/">in/kevwz</a></span><br>
-        <span style="line-height:28px"><img src="https://github.githubassets.com/favicons/favicon.svg" width="15">
-        <a href="https://github.com/kevwzhang">kevwzhang</a></span>
-    </p>
-</div>
-<br>
-<!-- End header copy -->
-
 <body>
-    <ul>
-        <li><a href="https://www.teamblind.com/">Blind</a></li>
-        <li><a href="https://levels.fyi/">Levels.fyi</a></li>
-        <li><a href="https://www.indeed.com/">Indeed</a></li>
-        <li><a href="https://builtin.com/">Built In</a></li>
-        <li><a href="https://www.glassdoor.com/">Glassdoor</a></li>
-    </ul>
-</body>
+  <script src="header.js"></script>
 
+  <main>
+    <a href="index.html" class="back-link">← Back</a>
+    <h1 class="page-title">Career</h1>
+    <p class="page-subtitle">Job boards and resources worth bookmarking.</p>
+
+    <p class="section-label">Job Boards</p>
+    <div class="link-grid">
+      <a href="https://www.teamblind.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Blind</div>
+          <div class="link-card-desc">Anonymous professional community</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://levels.fyi/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Levels.fyi</div>
+          <div class="link-card-desc">TC & leveling data by company</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.indeed.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Indeed</div>
+          <div class="link-card-desc">Broad job search engine</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://builtin.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Built In</div>
+          <div class="link-card-desc">Tech & startup jobs</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+      <a href="https://www.glassdoor.com/"
+         class="link-card" target="_blank" rel="noopener">
+        <div>
+          <div class="link-card-label">Glassdoor</div>
+          <div class="link-card-desc">Salaries, reviews, interview questions</div>
+        </div>
+        <span class="link-card-arrow">↗</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+</body>
 </html>
