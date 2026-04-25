@@ -25,9 +25,8 @@ html {
 }
 
 html, body {
-  /* Block iOS rubber-band bounce at page edges */
-  overscroll-behavior: none;
-  height: 100%;
+  height: auto;
+  overscroll-behavior-y: auto;
 }
 
 body {
@@ -38,7 +37,7 @@ body {
   font-family: 'DM Sans', sans-serif;
   font-size: 16px;
   color: var(--ink);
-  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── HEADER ── */
@@ -284,11 +283,16 @@ main {
   .link-card { border-radius: 8px; position: static; }
   .link-card::before { display: none; }
 
-  /* No hover on touch — kill all transitions and shadows */
-  *, *::before, *::after {
+  /* Disable transitions only on interactive card elements */
+  .link-card,
+  .link-card::before,
+  .link-card-arrow {
     transition: none !important;
+  }
+  
+  /* Optional: keep cards flat on mobile */
+  .link-card {
     box-shadow: none !important;
-    text-shadow: none !important;
   }
 
   .link-card { -webkit-tap-highlight-color: transparent; cursor: pointer; }
