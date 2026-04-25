@@ -23,6 +23,14 @@
 
   document.body.insertAdjacentHTML('afterbegin', html);
 
-  // iOS/Android: touchstart listener needed to reliably re-trigger :active on repeated taps
+  // iOS WebKit: force scroll to top on every page load instead of restoring saved position
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.addEventListener('load', function() {
+    window.scrollTo(0, 0);
+  });
+
+  // iOS: touchstart listener needed to reliably re-trigger :active on repeated taps
   document.addEventListener('touchstart', function(){}, {passive: true});
 })();

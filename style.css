@@ -24,6 +24,12 @@ html {
   html { scroll-behavior: smooth; }
 }
 
+html, body {
+  /* Block iOS rubber-band bounce at page edges */
+  overscroll-behavior: none;
+  height: 100%;
+}
+
 body {
   background-color: var(--bg);
   background-image:
@@ -32,7 +38,6 @@ body {
   font-family: 'DM Sans', sans-serif;
   font-size: 16px;
   color: var(--ink);
-  /* Remove min-height — it confuses Chrome's scroll height calculation */
   overscroll-behavior-y: none;
 }
 
