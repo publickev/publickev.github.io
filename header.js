@@ -23,6 +23,11 @@
 
   document.body.insertAdjacentHTML('afterbegin', html);
 
+  // On touch devices: hint to iOS compositor to promote page to its own layer
+  if ('ontouchstart' in window) {
+    document.documentElement.style.webkitTransform = 'translateZ(0)';
+  }
+
   // iOS requires a touchstart listener to reliably re-trigger :active on repeated taps
   document.addEventListener('touchstart', function(){}, {passive: true});
 

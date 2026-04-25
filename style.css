@@ -15,7 +15,9 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+@media (hover: hover) {
+  html { scroll-behavior: smooth; }
+}
 
 body {
   background-color: var(--bg);
@@ -259,8 +261,10 @@ body.is-scrolling *, body.is-scrolling *::before, body.is-scrolling *::after {
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   body {
-    /* Flat background — no gradient compositing during scroll */
     background-image: none;
+    /* Promote to compositor layer — scroll runs off the main thread on iOS */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
   .site-header {
     padding: 16px 20px;
@@ -277,15 +281,15 @@ body.is-scrolling *, body.is-scrolling *::before, body.is-scrolling *::after {
   main { padding: 32px 16px 60px; }
   .page-title { font-size: 32px; }
 
-  /* Smaller radius = fewer compositing layers per card */
-  .link-card { border-radius: 8px; }
-
-  /* Remove ::before accent bar — invisible on mobile and costs a compositing layer per card */
+  .link-card { border-radius: 8px; position: static; }
   .link-card::before { display: none; }
 
-  /* Kill all transitions on mobile */
-  *, *::before, *::after { transition: none !important; }
+  /* Kill all transitions and box-shadows on mobile — both force main-thread paints */
+  *, *::before, *::after {
+    transition: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
 
-  /* iOS suppresses :active after first touch — this forces it to re-enable */
   .link-card { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 }
