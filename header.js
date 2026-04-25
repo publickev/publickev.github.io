@@ -25,4 +25,16 @@
 
   // iOS requires a touchstart listener to reliably re-trigger :active on repeated taps
   document.addEventListener('touchstart', function(){}, {passive: true});
+
+  // Freeze transitions during scroll on mobile to prevent stutter
+  if ('ontouchstart' in window) {
+    let scrollTimer;
+    window.addEventListener('scroll', function() {
+      document.body.classList.add('is-scrolling');
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        document.body.classList.remove('is-scrolling');
+      }, 150);
+    }, {passive: true});
+  }
 })();
