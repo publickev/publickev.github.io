@@ -250,23 +250,19 @@ main {
 }
 
 /* ── FOOTER ── */
-.site-footer {
-  text-align: center;
-  padding: 24px;
-  font-size: 12px;
-  color: var(--ink-faint);
-  border-top: 1px solid var(--border);
-}
+.site-footer { display: none; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .site-header {
     padding: 16px 20px;
     gap: 14px;
-    /* Remove backdrop-filter on mobile — it causes layout recalc during momentum scroll */
+    /* On mobile: drop sticky, backdrop-filter, and any transforms —
+       all three contribute to stutter and browser-chrome lock on iOS */
+    position: static;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: rgba(222,218,208,0.95);
+    background: var(--bg);
   }
   .header-name { font-size: 20px; }
   .header-link span { display: none; }
