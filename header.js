@@ -22,4 +22,7 @@
     </header>`;
 
   document.body.insertAdjacentHTML('afterbegin', html);
+
+  // iOS requires a touchstart listener to reliably re-trigger :active on repeated taps
+  document.addEventListener('touchstart', function(){}, {passive: true});
 })();

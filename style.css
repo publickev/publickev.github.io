@@ -263,6 +263,10 @@ main {
   .site-header {
     padding: 16px 20px;
     gap: 14px;
+    /* Remove backdrop-filter on mobile — it causes layout recalc during momentum scroll */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(222,218,208,0.95);
   }
   .header-name { font-size: 20px; }
   .header-link span { display: none; }
@@ -270,4 +274,7 @@ main {
 
   main { padding: 32px 16px 60px; }
   .page-title { font-size: 32px; }
+
+  /* iOS suppresses :active after first touch — this forces it to re-enable */
+  .link-card { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 }
