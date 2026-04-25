@@ -14,7 +14,7 @@
       <a href="index.html" class="header-name">Kevin Zhang</a>
       <nav class="header-links">
         ${links.map(l => `
-          <a href="${l.href}" class="header-link" target="_blank" rel="noopener">
+          <a href="${l.href}" class="header-link">
             <img src="${l.icon}" alt="${l.label}">
             <span>${l.label}</span>
           </a>`).join('')}
