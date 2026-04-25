@@ -23,13 +23,10 @@
 
   document.body.insertAdjacentHTML('afterbegin', html);
 
-  // iOS WebKit: force scroll to top on every page load instead of restoring saved position
+  // Let browser handle scroll restoration naturally
   if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
+    history.scrollRestoration = 'auto';
   }
-  window.addEventListener('load', function() {
-    window.scrollTo(0, 0);
-  });
 
   // iOS: touchstart listener needed to reliably re-trigger :active on repeated taps
   document.addEventListener('touchstart', function(){}, {passive: true});
