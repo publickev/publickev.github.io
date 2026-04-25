@@ -15,6 +15,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* Disable scroll anchoring — prevents Chrome jumping to bottom on load */
+  overflow-anchor: none;
+}
+
 @media (hover: hover) {
   html { scroll-behavior: smooth; }
 }
@@ -27,8 +32,8 @@ body {
   font-family: 'DM Sans', sans-serif;
   font-size: 16px;
   color: var(--ink);
-  min-height: 100vh;
-  overscroll-behavior: none;
+  /* Remove min-height — it confuses Chrome's scroll height calculation */
+  overscroll-behavior-y: none;
 }
 
 /* ── HEADER ── */
@@ -254,19 +259,8 @@ main {
 /* ── FOOTER ── */
 .site-footer { display: none; }
 
-/* Kill transitions while scrolling to prevent stutter */
-body.is-scrolling *, body.is-scrolling *::before, body.is-scrolling *::after {
-  transition: none !important;
-}
-
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
-  body {
-    background-image: none;
-    /* Promote to compositor layer — scroll runs off the main thread on iOS */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
   .site-header {
     padding: 16px 20px;
     gap: 14px;
@@ -285,7 +279,7 @@ body.is-scrolling *, body.is-scrolling *::before, body.is-scrolling *::after {
   .link-card { border-radius: 8px; position: static; }
   .link-card::before { display: none; }
 
-  /* Kill all transitions and box-shadows on mobile — both force main-thread paints */
+  /* No hover on touch — kill all transitions and shadows */
   *, *::before, *::after {
     transition: none !important;
     box-shadow: none !important;
