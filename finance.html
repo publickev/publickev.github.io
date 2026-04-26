@@ -25,14 +25,19 @@
         </div>
         <svg class="link-card-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L12 2M12 2H5M12 2V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
-      <a href="https://www.tax.ny.gov/pit/file/tax-tables/it201i-2025.htm"
+      <a id="ny-tax-link"
          class="link-card">
         <div>
-          <div class="link-card-label">NY State Taxes</div>
+          <div class="link-card-label">New York Taxes</div>
           <div class="link-card-desc">Tax Tables for New York City and State</div>
         </div>
         <svg class="link-card-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L12 2M12 2H5M12 2V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
+      <script>
+        const taxYear = new Date().getFullYear() - 1;
+        document.getElementById('ny-tax-link').href =
+          `https://www.tax.ny.gov/pit/file/tax-tables/it201i-${taxYear}.htm`;
+      </script>
       <a href="https://www.irs.gov/taxtopics/tc409"
          class="link-card">
         <div>
