@@ -6,142 +6,463 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
-    svg { width: 100vw; height: 100vh; background: #cfe8ff; }
-    .country { stroke: #fff; stroke-width: 0.4; }
-    .marker-dot {
-      fill: #e03030; stroke: #fff; stroke-width: 1.5;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); cursor: pointer;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { overflow: hidden; background: #f5e6a8; }
+
+    #container {
+      width: 100vw; height: 100vh;
+      position: relative;
     }
-    .label-bg { fill: #f5e6a8; stroke: #888; stroke-width: 0.8; }
+
+    /* ── SVG canvases ── */
+    #flat-svg, #globe-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+    }
+    #flat-svg  { background: #ffffff; display: block; }
+    #globe-svg { background: #0b1622; display: none; }
+
+    /* ── Shared country styles ── */
+    .country { stroke: #fff; stroke-width: 0.4; }
+
+    /* ── Flat label styles ── */
+    #flat-svg .label-bg   { fill: #f5e6a8; stroke: #888; stroke-width: 0.8; }
+    #flat-svg .label-text { fill: #1a1a1a; }
+    #flat-svg .leader-line { stroke: #888; }
+
+    /* ── Globe label styles ── */
+    #globe-svg .label-bg   { fill: rgba(15,25,50,0.88); stroke: rgba(120,180,255,0.55); stroke-width: 0.8; }
+    #globe-svg .label-text { fill: #deeeff; }
+    #globe-svg .leader-line { stroke: rgba(140,195,255,0.55); }
+
+    /* ── Shared marker/label styles ── */
+    .marker-dot {
+      fill: #e03030; stroke: #fff;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+      cursor: pointer;
+    }
     .label-text {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      fill: #1a1a1a; pointer-events: none; dominant-baseline: middle;
+      pointer-events: none; dominant-baseline: middle;
     }
-    .leader-line {
-      stroke: #888; stroke-width: 0.8; stroke-dasharray: 3 2;
-      fill: none; pointer-events: none;
+    .leader-line { stroke-width: 0.8; stroke-dasharray: 3 2; fill: none; pointer-events: none; }
+    .label-group { transition: opacity 0.18s ease; }
+
+    /* ── Globe-specific SVG element styles ── */
+    .graticule { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 0.5; }
+
+    /* ── Stars ── */
+    @keyframes twinkle-a {
+      0%,100% { opacity: 0.85; }
+      50%      { opacity: 0.1;  }
     }
-    .label-group { transition: opacity 0.2s ease; }
+    @keyframes twinkle-b {
+      0%,100% { opacity: 0.45; }
+      55%      { opacity: 1.0;  }
+    }
+    @keyframes twinkle-c {
+      0%,100% { opacity: 0.65; }
+      40%      { opacity: 0.08; }
+    }
+    .star-a { animation: twinkle-a var(--dur) ease-in-out infinite; }
+    .star-b { animation: twinkle-b var(--dur) ease-in-out infinite; }
+    .star-c { animation: twinkle-c var(--dur) ease-in-out infinite; }
+
+    /* ── Flat sphere outline (warm brown border, parchment theme) ── */
+    .flat-outline { fill: none; stroke: rgba(120,90,40,0.35); stroke-width: 1.2; }
+
+    /* ── Toggle button ── */
+    #toggle-btn {
+      position: fixed; top: 16px; right: 16px; z-index: 200;
+      padding: 8px 18px; border: none; border-radius: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+      cursor: pointer; user-select: none;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, color 0.2s, transform 0.1s;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    body.mode-flat  #toggle-btn { background: rgba(30,70,150,0.15); color: #1a3a6e; }
+    body.mode-globe #toggle-btn { background: rgba(255,255,255,0.15); color: #deeeff; }
+    #toggle-btn:hover { transform: scale(1.04); }
+
+    /* ── Hint ── */
+    #hint {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12px; letter-spacing: 0.04em; pointer-events: none;
+    }
+    body.mode-flat  #hint { color: rgba(30,70,160,0.45); }
+    body.mode-globe #hint { color: rgba(160,200,255,0.45); }
   </style>
 </head>
-<body>
-<svg>
-  <g id="map-layer"></g>
-  <g id="marker-layer"></g>
-</svg>
+<body class="mode-flat">
+<div id="container">
+
+  <!-- ══ FLAT MAP SVG ══════════════════════════════════════ -->
+  <svg id="flat-svg">
+    <defs>
+      <clipPath id="flat-clip">
+        <path id="flat-clip-path"/>
+      </clipPath>
+    </defs>
+    <!-- Everything zoomable lives in one group -->
+    <g id="flat-zoom-group">
+      <!-- Sphere fill so ocean shows inside the outline -->
+      <path id="flat-sphere-fill" style="fill:#cfe8ff"/>
+      <g id="flat-countries"></g>
+      <path id="flat-outline" class="flat-outline"/>
+      <g id="flat-markers"></g>
+    </g>
+  </svg>
+
+  <!-- ══ GLOBE SVG ═════════════════════════════════════════ -->
+  <svg id="globe-svg">
+    <defs>
+      <radialGradient id="ocean-grad" cx="34%" cy="30%" r="65%" gradientUnits="objectBoundingBox">
+        <stop offset="0%"   stop-color="#1f8fd4"/>
+        <stop offset="50%"  stop-color="#0b4f90"/>
+        <stop offset="100%" stop-color="#04172c"/>
+      </radialGradient>
+      <radialGradient id="sheen-grad" cx="30%" cy="25%" r="62%" gradientUnits="objectBoundingBox">
+        <stop offset="0%"   stop-color="rgba(255,255,255,0.17)"/>
+        <stop offset="38%"  stop-color="rgba(180,220,255,0.05)"/>
+        <stop offset="100%" stop-color="rgba(40,100,220,0.20)"/>
+      </radialGradient>
+      <clipPath id="globe-clip">
+        <circle id="globe-clip-c"/>
+      </clipPath>
+    </defs>
+    <!-- Stars sit behind everything -->
+    <g id="stars"></g>
+    <!-- Layer order matters: ocean → graticule+countries (clipped) → sheen → rim -->
+    <circle id="globe-ocean" style="fill:url(#ocean-grad)"/>
+    <g clip-path="url(#globe-clip)">
+      <g id="globe-graticule"></g>
+      <g id="globe-countries"></g>
+    </g>
+    <!-- Sheen and rim sit ABOVE the clipped content -->
+    <circle id="globe-sheen" style="fill:url(#sheen-grad); pointer-events:none"/>
+    <circle id="globe-rim"   style="fill:none; stroke:rgba(120,190,255,0.65); stroke-width:2.5;
+                                    filter:drop-shadow(0 0 9px rgba(80,160,255,0.85))"/>
+    <g id="globe-markers"></g>
+  </svg>
+
+</div>
+
+<button id="toggle-btn">🌍 Globe View</button>
+<div id="hint">Scroll to zoom · Drag to pan</div>
+
 <script>
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS & DATA
+═══════════════════════════════════════════════════════════ */
 const isMobile  = window.innerWidth < 640;
-const width     = window.innerWidth;
-const height    = window.innerHeight;
+const W = window.innerWidth, H = window.innerHeight;
 const DOT_R     = isMobile ? 7 : 5;
 const FONT_SIZE = isMobile ? 17 : 13;
 const PAD_X = 5, PAD_Y = 3;
-const BASE_LABEL_DX = DOT_R + 6;
-const BASE_LABEL_DY = -FONT_SIZE * 0.6;
+const LDX = DOT_R + 6;   // label offset x
+const LDY = -FONT_SIZE * 0.6; // label offset y
 
-const svg         = d3.select("svg");
-const mapLayer    = d3.select("#map-layer");
-const markerLayer = d3.select("#marker-layer");
-
-const projection = d3.geoNaturalEarth1()
-  .scale(width / 6.5)
-  .translate([width / 2, height / 2]);
-const path = d3.geoPath(projection);
-
-const highlight = new Set([
+const HIGHLIGHT = new Set([
   "United States of America","Australia","China","Japan",
   "Ecuador","Singapore","Romania","Iceland","South Korea","Canada"
 ]);
 
-// priority 3 = always visible, 2 = zoom≥2.5, 1 = zoom≥4
-const markers = [
-  { name: "Fukuoka",            coords: [130.4017,  33.5902], priority: 2 },
-  { name: "Melbourne",          coords: [144.9631, -37.8136], priority: 3 },
-  { name: "Nara",               coords: [135.8048,  34.6851], priority: 1 },
-  { name: "Kobe",               coords: [135.1955,  34.6901], priority: 1 },
-  { name: "Kyoto",              coords: [135.7681,  35.0116], priority: 2 },
-  { name: "Osaka",              coords: [135.5023,  34.6937], priority: 2 },
-  { name: "Taizhou",            coords: [121.4208,  28.6564], priority: 1 },
-  { name: "Ningbo",             coords: [121.5503,  29.8746], priority: 1 },
-  { name: "Shanghai",           coords: [121.4737,  31.2304], priority: 3 },
-  { name: "Tokyo",              coords: [139.6503,  35.6762], priority: 3 },
-  { name: "Singapore",          coords: [103.8198,   1.3521], priority: 3 },
-  { name: "Bucharest",          coords: [ 26.1025,  44.4268], priority: 3 },
-  { name: "Quito",              coords: [-78.4678,  -0.1807], priority: 3 },
-  { name: "Galápagos Islands",  coords: [-90.9656,  -0.9538], priority: 2 },
-  { name: "Vík í Mýrdal",       coords: [-19.0060,  63.4186], priority: 2 },
-  { name: "Reykjavík",          coords: [-21.8174,  64.1265], priority: 3 },
-  { name: "Chicago",            coords: [-87.6298,  41.8781], priority: 3 },
-  { name: "Toronto",            coords: [-79.3832,  43.6532], priority: 3 },
-  { name: "Hong Kong",          coords: [114.1694,  22.3193], priority: 3 },
-  { name: "San Francisco",      coords: [-122.4194, 37.7749], priority: 3 },
-  { name: "Los Angeles",        coords: [-118.2437, 34.0522], priority: 3 },
-  { name: "Busan",              coords: [129.0756,  35.1796], priority: 2 },
-  { name: "Seoul",              coords: [126.9780,  37.5665], priority: 3 },
-  { name: "Beijing",            coords: [116.4074,  39.9042], priority: 3 },
-  { name: "New York City",      coords: [-74.0060,  40.7128], priority: 3 },
-  { name: "Great Barrier Reef", coords: [147.6992, -18.2871], priority: 2 },
+const MARKERS = [
+  { name:"Fukuoka",            coords:[130.4017, 33.5902],  p:2 },
+  { name:"Melbourne",          coords:[144.9631,-37.8136],  p:3 },
+  { name:"Nara",               coords:[135.8048, 34.6851],  p:1 },
+  { name:"Kobe",               coords:[135.1955, 34.6901],  p:1 },
+  { name:"Kyoto",              coords:[135.7681, 35.0116],  p:2 },
+  { name:"Osaka",              coords:[135.5023, 34.6937],  p:2 },
+  { name:"Taizhou",            coords:[121.4208, 28.6564],  p:1 },
+  { name:"Ningbo",             coords:[121.5503, 29.8746],  p:1 },
+  { name:"Shanghai",           coords:[121.4737, 31.2304],  p:3 },
+  { name:"Tokyo",              coords:[139.6503, 35.6762],  p:3 },
+  { name:"Singapore",          coords:[103.8198,  1.3521],  p:3 },
+  { name:"Bucharest",          coords:[ 26.1025, 44.4268],  p:3 },
+  { name:"Quito",              coords:[-78.4678, -0.1807],  p:3 },
+  { name:"Galápagos Islands",  coords:[-90.9656, -0.9538],  p:2 },
+  { name:"Vík í Mýrdal",       coords:[-19.0060, 63.4186],  p:2 },
+  { name:"Reykjavík",          coords:[-21.8174, 64.1265],  p:3 },
+  { name:"Chicago",            coords:[-87.6298, 41.8781],  p:3 },
+  { name:"Toronto",            coords:[-79.3832, 43.6532],  p:3 },
+  { name:"Hong Kong",          coords:[114.1694, 22.3193],  p:3 },
+  { name:"San Francisco",      coords:[-122.4194,37.7749],  p:3 },
+  { name:"Los Angeles",        coords:[-118.2437,34.0522],  p:3 },
+  { name:"Busan",              coords:[129.0756, 35.1796],  p:2 },
+  { name:"Seoul",              coords:[126.9780, 37.5665],  p:3 },
+  { name:"Beijing",            coords:[116.4074, 39.9042],  p:3 },
+  { name:"New York City",      coords:[-74.0060, 40.7128],  p:3 },
+  { name:"Great Barrier Reef", coords:[147.6992,-18.2871],  p:2 },
 ];
 
-function labelVisibleAtZoom(priority, k) {
-  if (priority >= 3) return k >= 1;
-  if (priority >= 2) return k >= 2.5;
-  return k >= 4;
+function labelVisible(priority, k) {
+  return priority >= 3 ? k >= 1 : priority >= 2 ? k >= 2.5 : k >= 4;
 }
 
-let currentTransform = d3.zoomIdentity;
+function cfill(name) {
+  return HIGHLIGHT.has(name) ? '#3db87a' : '#d3d3d3';
+}
 
-d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
-  .then(world => {
-    const countries = topojson.feature(world, world.objects.countries).features;
-    mapLayer.selectAll("path").data(countries).enter().append("path")
-      .attr("class","country")
-      .attr("fill", d => highlight.has(d.properties.name) ? "#4a90e2" : "#d3d3d3")
-      .attr("d", path);
+/* ═══════════════════════════════════════════════════════════
+   STARS
+═══════════════════════════════════════════════════════════ */
+(function generateStars() {
+  const starLayer = d3.select('#stars');
+  const classes   = ['star-a', 'star-b', 'star-c'];
+  const rand      = (a, b) => a + Math.random() * (b - a);
+  const COUNT     = 320;
 
-    const markerGs = markerLayer.selectAll(".marker")
-      .data(markers).enter().append("g").attr("class","marker");
+  // Seed a simple pseudo-random so stars are stable (not re-randomised each frame)
+  for (let i = 0; i < COUNT; i++) {
+    const x    = rand(0, W);
+    const y    = rand(0, H);
+    const r    = rand(0.3, 1.6);
+    const cls  = classes[Math.floor(Math.random() * 3)];
+    const dur  = rand(1.8, 5.5).toFixed(2) + 's';
+    const del  = rand(0, 5).toFixed(2)     + 's';
+    // Slight blue-white colour tint variety
+    const tint = Math.random() > 0.7
+      ? `rgba(${180+Math.floor(rand(0,75))},${200+Math.floor(rand(0,55))},255,1)`
+      : '#ffffff';
 
-    markerGs.append("circle").attr("class","marker-dot").attr("r", DOT_R);
+    starLayer.append('circle')
+      .attr('class', `star ${cls}`)
+      .attr('cx', x).attr('cy', y)
+      .attr('r',  r)
+      .style('fill', tint)
+      .style('--dur', dur)
+      .style('animation-delay', del);
+  }
+})();
 
-    const labelGs = markerGs.append("g").attr("class","label-group");
-    labelGs.append("line").attr("class","leader-line")
-      .attr("x1",0).attr("y1",0);
+/* ═══════════════════════════════════════════════════════════
+   FLAT MAP
+═══════════════════════════════════════════════════════════ */
+const flatSvg    = d3.select('#flat-svg');
+const flatZoomG  = d3.select('#flat-zoom-group');
+const flatCG     = d3.select('#flat-countries');
+const flatMG     = d3.select('#flat-markers');
 
-    const textGs = labelGs.append("g").attr("class","label-content");
-    textGs.append("text").attr("class","label-text")
-      .style("font-size", `${FONT_SIZE}px`).text(d => d.name);
+const flatProj = d3.geoNaturalEarth1().scale(W / 6.5).translate([W/2, H/2]);
+const flatPath = d3.geoPath(flatProj);
 
-    labelGs.each(function(d) {
-      const bb = this.querySelector("text").getBBox();
-      d._textW = bb.width; d._textH = bb.height;
-      d3.select(this).select(".label-content").insert("rect","text")
-        .attr("class","label-bg").attr("rx",3);
-    });
+let flatT = d3.zoomIdentity;
 
-    positionMarkers(currentTransform);
+const flatZoom = d3.zoom()
+  .scaleExtent([1, 12])
+  .translateExtent([[0,0],[W,H]])
+  .on('zoom', e => {
+    flatT = e.transform;
+    flatZoomG.attr('transform', flatT);
+    updateFlatMarkers();
   });
 
+function initFlatMap(countries) {
+  // Ocean fill for the sphere interior (so background stays blue when zoomed in)
+  d3.select('#flat-sphere-fill').datum({type:'Sphere'}).attr('d', flatPath);
+  // Outline path (inside the zoom group — moves with zoom)
+  d3.select('#flat-outline').datum({type:'Sphere'}).attr('d', flatPath);
+
+  flatCG.selectAll('path').data(countries).enter().append('path')
+    .attr('class','country')
+    .attr('fill', d => cfill(d.properties && d.properties.name))
+    .attr('d', flatPath);
+
+  buildMarkers(flatMG, false);
+  flatSvg.call(flatZoom);
+  updateFlatMarkers();
+}
+
+function updateFlatMarkers() {
+  const k = flatT.k;
+  const invK = 1 / k;
+  const positions = MARKERS.map(d => {
+    const [px, py] = flatProj(d.coords);
+    const vis = labelVisible(d.p, k);
+    const lw = d._tw ? (d._tw + PAD_X*2) * invK : 80 * invK;
+    const lh = d._th ? (d._th + PAD_Y*2) * invK : 20 * invK;
+    const ldx = LDX * invK;
+    const ldy = LDY * invK;
+    return { d, px, py, lx: px + ldx, ly: py + ldy - lh/2, lw, lh, vis, invK };
+  });
+  resolveCollisions(positions);
+  flatMG.selectAll('.marker').each(function(d, i) {
+    const inf = positions[i];
+    const g = d3.select(this);
+    g.attr('transform', `translate(${inf.px},${inf.py})`);
+
+    // Counter-scale dot and its stroke so both stay constant screen size
+    g.select('.marker-dot')
+      .attr('r', DOT_R * invK)
+      .style('stroke-width', 1.5 * invK);
+
+    const lg = g.select('.label-group');
+    lg.style('opacity', inf.vis ? 1 : 0);
+    if (!inf.vis || !d._tw) return;
+
+    const rx = inf.lx - inf.px;
+    const ry = inf.ly - inf.py;
+
+    // Counter-scale leader line stroke and dash pattern
+    lg.select('.leader-line')
+      .attr('x1', DOT_R * invK * 0.7).attr('y1', 0)
+      .attr('x2', rx).attr('y2', ry + inf.lh / 2)
+      .style('stroke-width', 0.8 * invK)
+      .style('stroke-dasharray', `${3 * invK} ${2 * invK}`);
+
+    const cg = lg.select('.label-content');
+    cg.attr('transform', `translate(${rx},${ry}) scale(${invK})`);
+    cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',(d._tw||0)+PAD_X*2).attr('height',(d._th||0)+PAD_Y*2);
+    cg.select('text').attr('x',0).attr('y',(d._th||FONT_SIZE)/2);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBE
+═══════════════════════════════════════════════════════════ */
+const globeSvg  = d3.select('#globe-svg');
+const globeCG   = d3.select('#globe-countries');
+const globeMG   = d3.select('#globe-markers');
+const globeGrat = d3.select('#globe-graticule');
+
+const GLOBE_R0 = Math.min(W, H) / 2.1;
+let gRotate = [-20, -25, 0];
+let gZoom   = 1;
+let autoSpin = false;
+
+const globeProj = d3.geoOrthographic().clipAngle(90).precision(0.5);
+
+function setGlobeCircles() {
+  const r = GLOBE_R0 * gZoom;
+  const cx = W/2, cy = H/2;
+  globeProj.scale(r).translate([cx, cy]).rotate(gRotate);
+  ['#globe-ocean','#globe-sheen','#globe-rim'].forEach(id =>
+    d3.select(id).attr('cx',cx).attr('cy',cy).attr('r',r)
+  );
+  d3.select('#globe-clip-c').attr('cx',cx).attr('cy',cy).attr('r',r);
+}
+
+function renderGlobe() {
+  setGlobeCircles();
+  const gp = d3.geoPath(globeProj);
+  globeCG.selectAll('path').attr('d', gp);
+  globeGrat.selectAll('path').attr('d', gp);
+  updateGlobeMarkers();
+}
+
+function initGlobe(countries) {
+  globeGrat.append('path').datum(d3.geoGraticule()()).attr('class','graticule');
+  globeCG.selectAll('path').data(countries).enter().append('path')
+    .attr('class','country')
+    .attr('fill', d => cfill(d.properties && d.properties.name));
+  buildMarkers(globeMG, true);
+  renderGlobe();
+}
+
+function globeOnScreen(coords) {
+  const [lon, lat] = coords;
+  const [rl, rp] = [-gRotate[0], -gRotate[1]];
+  return (
+    Math.sin(lat*Math.PI/180)*Math.sin(rp*Math.PI/180) +
+    Math.cos(lat*Math.PI/180)*Math.cos(rp*Math.PI/180)*Math.cos((lon-rl)*Math.PI/180)
+  ) > 0.02;
+}
+
+function updateGlobeMarkers() {
+  globeMG.selectAll('.marker').each(function(d) {
+    const vis  = globeOnScreen(d.coords);
+    const proj = globeProj(d.coords);
+    if (!proj) return;
+    const [px, py] = proj;
+    const g = d3.select(this);
+    g.attr('transform', `translate(${px},${py})`).style('opacity', vis?1:0).style('pointer-events', vis?null:'none');
+    const show = vis && labelVisible(d.p, gZoom);
+    g.select('.label-group').style('opacity', show ? 1 : 0);
+    if (!show || !d._tw) return;
+    const rx = LDX, ry = LDY - (d._th||FONT_SIZE)/2;
+    g.select('.leader-line').attr('x1', DOT_R*0.7).attr('y1',0).attr('x2',rx).attr('y2', ry+(d._th||FONT_SIZE)/2+PAD_Y);
+    const cg = g.select('.label-content').attr('transform',`translate(${rx},${ry})`);
+    cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',(d._tw||0)+PAD_X*2).attr('height',(d._th||0)+PAD_Y*2);
+    cg.select('text').attr('x',0).attr('y',(d._th||FONT_SIZE)/2);
+  });
+}
+
+/* Globe drag */
+let dragStart = null, rotStart = null;
+function onDown(e) {
+  if (e.button && e.button !== 0) return;
+  e.preventDefault(); autoSpin = false;
+  const p = e.touches ? e.touches[0] : e;
+  dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
+  window.addEventListener('mousemove', onMove, {passive:false});
+  window.addEventListener('touchmove', onMove, {passive:false});
+  window.addEventListener('mouseup',   onUp);
+  window.addEventListener('touchend',  onUp);
+}
+function onMove(e) {
+  if (!dragStart) return; e.preventDefault();
+  const p = e.touches ? e.touches[0] : e;
+  const dx = p.clientX - dragStart[0], dy = p.clientY - dragStart[1];
+  const s = 0.35 / gZoom;
+  gRotate = [rotStart[0]+dx*s, Math.max(-85,Math.min(85,rotStart[1]-dy*s)), rotStart[2]];
+  renderGlobe();
+}
+function onUp() {
+  dragStart = null;
+  window.removeEventListener('mousemove', onMove);
+  window.removeEventListener('touchmove', onMove);
+  window.removeEventListener('mouseup',   onUp);
+  window.removeEventListener('touchend',  onUp);
+}
+function onWheel(e) {
+  e.preventDefault();
+  gZoom = Math.max(0.5, Math.min(8, gZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
+  renderGlobe();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHARED MARKER BUILDER
+═══════════════════════════════════════════════════════════ */
+function buildMarkers(container, isGlobe) {
+  const mgs = container.selectAll('.marker').data(MARKERS).enter().append('g').attr('class','marker');
+  mgs.append('circle').attr('class','marker-dot').attr('r', DOT_R).style('stroke-width', 1.5);
+  const lgs = mgs.append('g').attr('class','label-group');
+  lgs.append('line').attr('class','leader-line').attr('x1',0).attr('y1',0);
+  lgs.append('g').attr('class','label-content')
+    .append('text').attr('class','label-text').style('font-size',`${FONT_SIZE}px`).text(d=>d.name);
+  // measure bounding boxes (only need to do once — reuse across both svgs)
+  lgs.each(function(d) {
+    if (d._tw) return; // already measured
+    const bb = this.querySelector('text').getBBox();
+    d._tw = bb.width; d._th = bb.height;
+  });
+  lgs.each(function(d) {
+    d3.select(this).select('.label-content').insert('rect','text').attr('class','label-bg').attr('rx',3);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COLLISION RESOLUTION (flat only)
+═══════════════════════════════════════════════════════════ */
 function resolveCollisions(positions) {
-  const MARGIN = 4;
-  for (let iter = 0; iter < 15; iter++) {
+  const M = 4;
+  for (let it = 0; it < 15; it++) {
     let moved = false;
     for (let i = 0; i < positions.length; i++) {
-      if (!positions[i].visible) continue;
-      for (let j = i + 1; j < positions.length; j++) {
-        if (!positions[j].visible) continue;
+      if (!positions[i].vis) continue;
+      for (let j = i+1; j < positions.length; j++) {
+        if (!positions[j].vis) continue;
         const a = positions[i], b = positions[j];
-        const ox = Math.min(a.lx+a.lw, b.lx+b.lw) - Math.max(a.lx, b.lx) + MARGIN;
-        const oy = Math.min(a.ly+a.lh, b.ly+b.lh) - Math.max(a.ly, b.ly) + MARGIN;
-        if (ox > 0 && oy > 0) {
-          if (oy <= ox) {
-            const p = oy / 2;
-            if (a.ly < b.ly) { a.ly -= p; b.ly += p; } else { a.ly += p; b.ly -= p; }
-          } else {
-            const p = ox / 2;
-            if (a.lx < b.lx) { a.lx -= p; b.lx += p; } else { a.lx += p; b.lx -= p; }
-          }
+        const ox = Math.min(a.lx+a.lw,b.lx+b.lw)-Math.max(a.lx,b.lx)+M;
+        const oy = Math.min(a.ly+a.lh,b.ly+b.lh)-Math.max(a.ly,b.ly)+M;
+        if (ox>0 && oy>0) {
+          const half = (oy<=ox?oy:ox)/2;
+          if (oy<=ox) { a.ly<b.ly ? (a.ly-=half,b.ly+=half) : (a.ly+=half,b.ly-=half); }
+          else        { a.lx<b.lx ? (a.lx-=half,b.lx+=half) : (a.lx+=half,b.lx-=half); }
           moved = true;
         }
       }
@@ -150,69 +471,66 @@ function resolveCollisions(positions) {
   }
 }
 
-function positionMarkers(t) {
-  const k = t.k;
-  const positions = markers.map(d => {
-    const [sx, sy] = projection(d.coords);
-    const [px, py] = t.apply([sx, sy]);
-    const visible = labelVisibleAtZoom(d.priority, k);
-    const scale = isMobile ? Math.pow(k, 0.6) : 1;
-    const lw = d._textW ? (d._textW + PAD_X*2)*scale : 80;
-    const lh = d._textH ? (d._textH + PAD_Y*2)*scale : 20;
-    return {
-      d, px, py,
-      lx: px + BASE_LABEL_DX*scale,
-      ly: py + BASE_LABEL_DY*scale - lh/2,
-      lw, lh, visible, scale,
-    };
-  });
+/* ═══════════════════════════════════════════════════════════
+   MODE TOGGLE
+═══════════════════════════════════════════════════════════ */
+let mode = 'flat';
 
-  resolveCollisions(positions);
-
-  markerLayer.selectAll(".marker").each(function(d, i) {
-    const info = positions[i];
-    const g = d3.select(this);
-    g.attr("transform", `translate(${info.px},${info.py})`);
-    if (isMobile) g.select(".marker-dot").attr("r", DOT_R * info.scale);
-
-    const labelG = g.select(".label-group");
-    labelG.style("opacity", info.visible ? 1 : 0);
-    if (!info.visible || !d._textW) return;
-
-    const relLx = info.lx - info.px;
-    const relLy = info.ly - info.py;
-    const lineEndY = relLy + info.lh/2;
-    const lineStartX = (relLx > 0 ? 1 : -1) * DOT_R * (isMobile ? info.scale : 1) * 0.7;
-
-    labelG.select(".leader-line")
-      .attr("x1", lineStartX).attr("y1", 0)
-      .attr("x2", relLx).attr("y2", lineEndY);
-
-    const contentG = labelG.select(".label-content");
-    contentG.attr("transform", isMobile
-      ? `translate(${relLx},${relLy}) scale(${info.scale})`
-      : `translate(${relLx},${relLy})`);
-
-    contentG.select("rect")
-      .attr("x", -PAD_X).attr("y", -PAD_Y)
-      .attr("width", (d._textW||0) + PAD_X*2)
-      .attr("height",(d._textH||0) + PAD_Y*2);
-
-    contentG.select("text")
-      .attr("x", 0).attr("y", (d._textH||FONT_SIZE)/2);
-  });
+function switchToGlobe() {
+  mode = 'globe';
+  document.body.className = 'mode-globe';
+  document.getElementById('flat-svg').style.display  = 'none';
+  document.getElementById('globe-svg').style.display = 'block';
+  document.getElementById('toggle-btn').textContent  = '🗺️ Flat Map';
+  document.getElementById('hint').textContent        = 'Drag to rotate · Scroll to zoom';
+  // Detach flat zoom
+  flatSvg.on('.zoom', null);
+  // Attach globe interactions
+  document.getElementById('globe-svg').addEventListener('mousedown',  onDown, {passive:false});
+  document.getElementById('globe-svg').addEventListener('touchstart', onDown, {passive:false});
+  document.getElementById('globe-svg').addEventListener('wheel',      onWheel,{passive:false});
+  // Auto-spin
+  autoSpin = true;
+  (function spin() {
+    if (!autoSpin || mode !== 'globe') return;
+    gRotate[0] += 0.12; renderGlobe();
+    requestAnimationFrame(spin);
+  })();
 }
 
-const zoom = d3.zoom()
-  .scaleExtent([1, 12])
-  .translateExtent([[0, 0], [width, height]])
-  .on("zoom", event => {
-    currentTransform = event.transform;
-    mapLayer.attr("transform", currentTransform);
-    positionMarkers(currentTransform);
-  });
+function switchToFlat() {
+  mode = 'flat';
+  document.body.className = 'mode-flat';
+  document.getElementById('globe-svg').style.display = 'none';
+  document.getElementById('flat-svg').style.display  = 'block';
+  document.getElementById('toggle-btn').textContent  = '🌍 Globe View';
+  document.getElementById('hint').textContent        = 'Scroll to zoom · Drag to pan';
+  autoSpin = false;
+  // Detach globe interactions
+  const gs = document.getElementById('globe-svg');
+  gs.removeEventListener('mousedown',  onDown);
+  gs.removeEventListener('touchstart', onDown);
+  gs.removeEventListener('wheel',      onWheel);
+  // Re-attach flat zoom (restores saved transform)
+  flatSvg.call(flatZoom).call(flatZoom.transform, flatT);
+  updateFlatMarkers();
+}
 
-svg.call(zoom);
+document.getElementById('toggle-btn').addEventListener('click', () => {
+  if (mode === 'flat') switchToGlobe(); else switchToFlat();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   LOAD & INIT
+═══════════════════════════════════════════════════════════ */
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(world => {
+  const countries = topojson.feature(world, world.objects.countries).features;
+  initFlatMap(countries);
+  initGlobe(countries);
+  // Start in flat mode
+  flatSvg.call(flatZoom);
+  updateFlatMarkers();
+});
 </script>
 </body>
 </html>
