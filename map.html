@@ -150,6 +150,15 @@ function positionMarkers(t) {
     const [px, py] = t.apply([sx, sy]);
     return `translate(${px},${py})`;
   });
+
+  // On mobile: scale markers up with zoom so labels become readable when zoomed in.
+  // On desktop: markers stay fixed pixel size regardless of zoom.
+  if (isMobile) {
+    // Grow at ~60% of the zoom rate — readable when zoomed, not overwhelming at 1x
+    const s = Math.pow(t.k, 0.6);
+    markerLayer.selectAll(".marker-dot").attr("r", DOT_R * s);
+    markerLayer.selectAll(".label-group").attr("transform", `scale(${s})`);
+  }
 }
 
 const zoom = d3.zoom()
