@@ -3,38 +3,26 @@
 <head>
   <meta charset="utf-8">
   <title>World Map</title>
-
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
-
   <style>
     body { margin: 0; overflow: hidden; }
     svg { width: 100vw; height: 100vh; background: #cfe8ff; }
-
-    .country {
-      stroke: #fff;
-      stroke-width: 0.4;
-    }
-
+    .country { stroke: #fff; stroke-width: 0.4; }
     .marker-dot {
-      fill: #e03030;
-      stroke: #fff;
-      stroke-width: 1.5;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+      fill: #e03030; stroke: #fff; stroke-width: 1.5;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); cursor: pointer;
     }
-
-    .label-bg {
-      fill: #f5e6a8;
-      stroke: #888;
-      stroke-width: 0.8;
-    }
-
+    .label-bg { fill: #f5e6a8; stroke: #888; stroke-width: 0.8; }
     .label-text {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      fill: #1a1a1a;
-      pointer-events: none;
-      dominant-baseline: middle;
+      fill: #1a1a1a; pointer-events: none; dominant-baseline: middle;
     }
+    .leader-line {
+      stroke: #888; stroke-width: 0.8; stroke-dasharray: 3 2;
+      fill: none; pointer-events: none;
+    }
+    .label-group { transition: opacity 0.2s ease; }
   </style>
 </head>
 <body>
@@ -42,19 +30,15 @@
   <g id="map-layer"></g>
   <g id="marker-layer"></g>
 </svg>
-
 <script>
 const isMobile  = window.innerWidth < 640;
 const width     = window.innerWidth;
 const height    = window.innerHeight;
-
-// Fixed screen-pixel sizes — identical behaviour at every zoom level
-const DOT_R     = isMobile ? 7  : 5;
-const FONT_SIZE = isMobile ? 17 : 15;
-const PAD_X     = 5;
-const PAD_Y     = 3;
-const LABEL_DX  = DOT_R + 5;
-const LABEL_DY  = -FONT_SIZE * 0.6;
+const DOT_R     = isMobile ? 7 : 5;
+const FONT_SIZE = isMobile ? 17 : 13;
+const PAD_X = 5, PAD_Y = 3;
+const BASE_LABEL_DX = DOT_R + 6;
+const BASE_LABEL_DY = -FONT_SIZE * 0.6;
 
 const svg         = d3.select("svg");
 const mapLayer    = d3.select("#map-layer");
@@ -63,102 +47,160 @@ const markerLayer = d3.select("#marker-layer");
 const projection = d3.geoNaturalEarth1()
   .scale(width / 6.5)
   .translate([width / 2, height / 2]);
-
 const path = d3.geoPath(projection);
 
 const highlight = new Set([
-  "United States of America", "Australia", "China", "Japan",
-  "Ecuador", "Singapore", "Romania", "Iceland", "South Korea"
+  "United States of America","Australia","China","Japan",
+  "Ecuador","Singapore","Romania","Iceland","South Korea","Canada"
 ]);
 
+// priority 3 = always visible, 2 = zoom≥2.5, 1 = zoom≥4
 const markers = [
-  { name: "Fukuoka",            coords: [130.4017,   33.5902] },
-  { name: "Melbourne",          coords: [144.9631,  -37.8136] },
-  { name: "Osaka",              coords: [135.5023,   34.6937] },
-  { name: "Shanghai",           coords: [121.4737,   31.2304] },
-  { name: "Tokyo",              coords: [139.6503,   35.6762] },
-  { name: "Singapore",          coords: [103.8198,    1.3521] },
-  { name: "Bucharest",          coords: [ 26.1025,   44.4268] },
-  { name: "Quito",              coords: [-78.4678,   -0.1807] },
-  { name: "Galápagos Islands",  coords: [-90.9656,   -0.9538] },
-  { name: "Reykjavík",          coords: [-21.8174,   64.1265] },
-  { name: "Chicago",            coords: [-87.6298,   41.8781] },
-  { name: "Toronto",            coords: [-79.3832,   43.6532] },
-  { name: "Hong Kong",          coords: [114.1694,   22.3193] },
-  { name: "San Francisco",      coords: [-122.4194,  37.7749] },
-  { name: "Los Angeles",        coords: [-118.2437,  34.0522] },
-  { name: "Busan",              coords: [129.0756,   35.1796] },
-  { name: "Seoul",              coords: [126.9780,   37.5665] },
-  { name: "Beijing",            coords: [116.4074,   39.9042] },
-  { name: "New York City",      coords: [-74.0060,   40.7128] },
-  { name: "Great Barrier Reef", coords: [147.6992,  -18.2871] },
+  { name: "Fukuoka",            coords: [130.4017,  33.5902], priority: 2 },
+  { name: "Melbourne",          coords: [144.9631, -37.8136], priority: 3 },
+  { name: "Nara",               coords: [135.8048,  34.6851], priority: 1 },
+  { name: "Kobe",               coords: [135.1955,  34.6901], priority: 1 },
+  { name: "Kyoto",              coords: [135.7681,  35.0116], priority: 2 },
+  { name: "Osaka",              coords: [135.5023,  34.6937], priority: 2 },
+  { name: "Taizhou",            coords: [121.4208,  28.6564], priority: 1 },
+  { name: "Ningbo",             coords: [121.5503,  29.8746], priority: 1 },
+  { name: "Shanghai",           coords: [121.4737,  31.2304], priority: 3 },
+  { name: "Tokyo",              coords: [139.6503,  35.6762], priority: 3 },
+  { name: "Singapore",          coords: [103.8198,   1.3521], priority: 3 },
+  { name: "Bucharest",          coords: [ 26.1025,  44.4268], priority: 3 },
+  { name: "Quito",              coords: [-78.4678,  -0.1807], priority: 3 },
+  { name: "Galápagos Islands",  coords: [-90.9656,  -0.9538], priority: 2 },
+  { name: "Vík í Mýrdal",       coords: [-19.0060,  63.4186], priority: 2 },
+  { name: "Reykjavík",          coords: [-21.8174,  64.1265], priority: 3 },
+  { name: "Chicago",            coords: [-87.6298,  41.8781], priority: 3 },
+  { name: "Toronto",            coords: [-79.3832,  43.6532], priority: 3 },
+  { name: "Hong Kong",          coords: [114.1694,  22.3193], priority: 3 },
+  { name: "San Francisco",      coords: [-122.4194, 37.7749], priority: 3 },
+  { name: "Los Angeles",        coords: [-118.2437, 34.0522], priority: 3 },
+  { name: "Busan",              coords: [129.0756,  35.1796], priority: 2 },
+  { name: "Seoul",              coords: [126.9780,  37.5665], priority: 3 },
+  { name: "Beijing",            coords: [116.4074,  39.9042], priority: 3 },
+  { name: "New York City",      coords: [-74.0060,  40.7128], priority: 3 },
+  { name: "Great Barrier Reef", coords: [147.6992, -18.2871], priority: 2 },
 ];
+
+function labelVisibleAtZoom(priority, k) {
+  if (priority >= 3) return k >= 1;
+  if (priority >= 2) return k >= 2.5;
+  return k >= 4;
+}
 
 let currentTransform = d3.zoomIdentity;
 
 d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
   .then(world => {
     const countries = topojson.feature(world, world.objects.countries).features;
-
-    mapLayer.selectAll("path")
-      .data(countries)
-      .enter()
-      .append("path")
-      .attr("class", "country")
+    mapLayer.selectAll("path").data(countries).enter().append("path")
+      .attr("class","country")
       .attr("fill", d => highlight.has(d.properties.name) ? "#4a90e2" : "#d3d3d3")
       .attr("d", path);
 
-    // Each marker is positioned in screen space and never part of the zoom transform.
-    // Pins and labels stay pixel-perfect at every zoom level on both desktop and mobile.
     const markerGs = markerLayer.selectAll(".marker")
-      .data(markers)
-      .enter()
-      .append("g")
-      .attr("class", "marker");
+      .data(markers).enter().append("g").attr("class","marker");
 
-    markerGs.append("circle")
-      .attr("class", "marker-dot")
-      .attr("r", DOT_R);
+    markerGs.append("circle").attr("class","marker-dot").attr("r", DOT_R);
 
-    const labelGs = markerGs.append("g").attr("class", "label-group");
+    const labelGs = markerGs.append("g").attr("class","label-group");
+    labelGs.append("line").attr("class","leader-line")
+      .attr("x1",0).attr("y1",0);
 
-    labelGs.append("text")
-      .attr("class", "label-text")
-      .attr("x", LABEL_DX)
-      .attr("y", LABEL_DY)
-      .style("font-size", `${FONT_SIZE}px`)
-      .text(d => d.name);
+    const textGs = labelGs.append("g").attr("class","label-content");
+    textGs.append("text").attr("class","label-text")
+      .style("font-size", `${FONT_SIZE}px`).text(d => d.name);
 
-    // Size bg rects after text is in the DOM
-    labelGs.each(function () {
+    labelGs.each(function(d) {
       const bb = this.querySelector("text").getBBox();
-      d3.select(this).insert("rect", "text")
-        .attr("class", "label-bg")
-        .attr("x",      bb.x - PAD_X)
-        .attr("y",      bb.y - PAD_Y)
-        .attr("width",  bb.width  + PAD_X * 2)
-        .attr("height", bb.height + PAD_Y * 2)
-        .attr("rx", 3);
+      d._textW = bb.width; d._textH = bb.height;
+      d3.select(this).select(".label-content").insert("rect","text")
+        .attr("class","label-bg").attr("rx",3);
     });
 
     positionMarkers(currentTransform);
   });
 
+function resolveCollisions(positions) {
+  const MARGIN = 4;
+  for (let iter = 0; iter < 15; iter++) {
+    let moved = false;
+    for (let i = 0; i < positions.length; i++) {
+      if (!positions[i].visible) continue;
+      for (let j = i + 1; j < positions.length; j++) {
+        if (!positions[j].visible) continue;
+        const a = positions[i], b = positions[j];
+        const ox = Math.min(a.lx+a.lw, b.lx+b.lw) - Math.max(a.lx, b.lx) + MARGIN;
+        const oy = Math.min(a.ly+a.lh, b.ly+b.lh) - Math.max(a.ly, b.ly) + MARGIN;
+        if (ox > 0 && oy > 0) {
+          if (oy <= ox) {
+            const p = oy / 2;
+            if (a.ly < b.ly) { a.ly -= p; b.ly += p; } else { a.ly += p; b.ly -= p; }
+          } else {
+            const p = ox / 2;
+            if (a.lx < b.lx) { a.lx -= p; b.lx += p; } else { a.lx += p; b.lx -= p; }
+          }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+}
+
 function positionMarkers(t) {
-  markerLayer.selectAll(".marker").attr("transform", d => {
+  const k = t.k;
+  const positions = markers.map(d => {
     const [sx, sy] = projection(d.coords);
     const [px, py] = t.apply([sx, sy]);
-    return `translate(${px},${py})`;
+    const visible = labelVisibleAtZoom(d.priority, k);
+    const scale = isMobile ? Math.pow(k, 0.6) : 1;
+    const lw = d._textW ? (d._textW + PAD_X*2)*scale : 80;
+    const lh = d._textH ? (d._textH + PAD_Y*2)*scale : 20;
+    return {
+      d, px, py,
+      lx: px + BASE_LABEL_DX*scale,
+      ly: py + BASE_LABEL_DY*scale - lh/2,
+      lw, lh, visible, scale,
+    };
   });
 
-  // On mobile: scale markers up with zoom so labels become readable when zoomed in.
-  // On desktop: markers stay fixed pixel size regardless of zoom.
-  if (isMobile) {
-    // Grow at ~60% of the zoom rate — readable when zoomed, not overwhelming at 1x
-    const s = Math.pow(t.k, 0.6);
-    markerLayer.selectAll(".marker-dot").attr("r", DOT_R * s);
-    markerLayer.selectAll(".label-group").attr("transform", `scale(${s})`);
-  }
+  resolveCollisions(positions);
+
+  markerLayer.selectAll(".marker").each(function(d, i) {
+    const info = positions[i];
+    const g = d3.select(this);
+    g.attr("transform", `translate(${info.px},${info.py})`);
+    if (isMobile) g.select(".marker-dot").attr("r", DOT_R * info.scale);
+
+    const labelG = g.select(".label-group");
+    labelG.style("opacity", info.visible ? 1 : 0);
+    if (!info.visible || !d._textW) return;
+
+    const relLx = info.lx - info.px;
+    const relLy = info.ly - info.py;
+    const lineEndY = relLy + info.lh/2;
+    const lineStartX = (relLx > 0 ? 1 : -1) * DOT_R * (isMobile ? info.scale : 1) * 0.7;
+
+    labelG.select(".leader-line")
+      .attr("x1", lineStartX).attr("y1", 0)
+      .attr("x2", relLx).attr("y2", lineEndY);
+
+    const contentG = labelG.select(".label-content");
+    contentG.attr("transform", isMobile
+      ? `translate(${relLx},${relLy}) scale(${info.scale})`
+      : `translate(${relLx},${relLy})`);
+
+    contentG.select("rect")
+      .attr("x", -PAD_X).attr("y", -PAD_Y)
+      .attr("width", (d._textW||0) + PAD_X*2)
+      .attr("height",(d._textH||0) + PAD_Y*2);
+
+    contentG.select("text")
+      .attr("x", 0).attr("y", (d._textH||FONT_SIZE)/2);
+  });
 }
 
 const zoom = d3.zoom()
