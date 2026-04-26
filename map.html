@@ -8,175 +8,160 @@
   <script src="https://unpkg.com/topojson@3"></script>
 
   <style>
-    body { margin: 0; }
+    body { margin: 0; overflow: hidden; }
     svg { width: 100vw; height: 100vh; background: #cfe8ff; }
 
     .country {
-      stroke: #222;
-      stroke-width: 0.5;
+      stroke: #fff;
+      stroke-width: 0.4;
     }
 
-    .pin-circle {
-      fill: red;
-      stroke: black;
-      stroke-width: 1;
+    .marker-dot {
+      fill: #e03030;
+      stroke: #fff;
+      stroke-width: 1.5;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
     }
 
-    .label-box {
+    .label-bg {
       fill: #f5e6a8;
-      stroke: #000;
-      stroke-width: 1;
-      rx: 4;
+      stroke: #888;
+      stroke-width: 0.8;
     }
 
     .label-text {
-      font-size: 12px;
-      font-family: sans-serif;
-      fill: #000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      fill: #1a1a1a;
       pointer-events: none;
+      dominant-baseline: middle;
     }
   </style>
 </head>
 <body>
-
-<svg></svg>
+<svg>
+  <g id="map-layer"></g>
+  <g id="marker-layer"></g>
+</svg>
 
 <script>
-const width = window.innerWidth;
-const height = window.innerHeight;
+const isMobile  = window.innerWidth < 640;
+const width     = window.innerWidth;
+const height    = window.innerHeight;
 
-const svg = d3.select("svg");
+// Fixed screen-pixel sizes — identical behaviour at every zoom level
+const DOT_R     = isMobile ? 5  : 4;
+const FONT_SIZE = isMobile ? 13 : 12;
+const PAD_X     = 5;
+const PAD_Y     = 3;
+const LABEL_DX  = DOT_R + 5;
+const LABEL_DY  = -FONT_SIZE * 0.6;
 
-// Layers
-const mapLayer = svg.append("g");
-const markerLayer = svg.append("g");
+const svg         = d3.select("svg");
+const mapLayer    = d3.select("#map-layer");
+const markerLayer = d3.select("#marker-layer");
 
-// Projection
 const projection = d3.geoNaturalEarth1()
   .scale(width / 6.5)
   .translate([width / 2, height / 2]);
 
 const path = d3.geoPath(projection);
 
-// Highlight countries
 const highlight = new Set([
-  "United States of America",
-  "Australia",
-  "China",
-  "Japan",
-  "Ecuador",
-  "Singapore",
-  "Romania",
-  "Iceland",
-  "South Korea"
+  "United States of America", "Australia", "China", "Japan",
+  "Ecuador", "Singapore", "Romania", "Iceland", "South Korea"
 ]);
 
-// 🌍 Locations (lng, lat)
 const markers = [
-  { name: "Fukuoka", coords: [130.4017, 33.5902] },
-  { name: "Melbourne", coords: [144.9631, -37.8136] },
-  { name: "Osaka", coords: [135.5023, 34.6937] },
-  { name: "Shanghai", coords: [121.4737, 31.2304] },
-  { name: "Tokyo", coords: [139.6503, 35.6762] },
-  { name: "Singapore", coords: [103.8198, 1.3521] },
-  { name: "Bucharest", coords: [26.1025, 44.4268] },
-  { name: "Quito", coords: [-78.4678, -0.1807] },
-  { name: "Galápagos Islands", coords: [-90.9656, -0.9538] },
-  { name: "Reykjavík", coords: [-21.8174, 64.1265] },
-  { name: "Chicago", coords: [-87.6298, 41.8781] },
-  { name: "Toronto", coords: [-79.3832, 43.6532] },
-  { name: "Hong Kong", coords: [114.1694, 22.3193] },
-  { name: "San Francisco", coords: [-122.4194, 37.7749] },
-  { name: "Los Angeles", coords: [-118.2437, 34.0522] },
-  { name: "Busan", coords: [129.0756, 35.1796] },
-  { name: "Seoul", coords: [126.9780, 37.5665] },
-  { name: "Beijing", coords: [116.4074, 39.9042] },
-  { name: "New York City", coords: [-74.0060, 40.7128] },
-  { name: "Great Barrier Reef", coords: [147.6992, -18.2871] }
+  { name: "Fukuoka",            coords: [130.4017,   33.5902] },
+  { name: "Melbourne",          coords: [144.9631,  -37.8136] },
+  { name: "Osaka",              coords: [135.5023,   34.6937] },
+  { name: "Shanghai",           coords: [121.4737,   31.2304] },
+  { name: "Tokyo",              coords: [139.6503,   35.6762] },
+  { name: "Singapore",          coords: [103.8198,    1.3521] },
+  { name: "Bucharest",          coords: [ 26.1025,   44.4268] },
+  { name: "Quito",              coords: [-78.4678,   -0.1807] },
+  { name: "Galápagos Islands",  coords: [-90.9656,   -0.9538] },
+  { name: "Reykjavík",          coords: [-21.8174,   64.1265] },
+  { name: "Chicago",            coords: [-87.6298,   41.8781] },
+  { name: "Toronto",            coords: [-79.3832,   43.6532] },
+  { name: "Hong Kong",          coords: [114.1694,   22.3193] },
+  { name: "San Francisco",      coords: [-122.4194,  37.7749] },
+  { name: "Los Angeles",        coords: [-118.2437,  34.0522] },
+  { name: "Busan",              coords: [129.0756,   35.1796] },
+  { name: "Seoul",              coords: [126.9780,   37.5665] },
+  { name: "Beijing",            coords: [116.4074,   39.9042] },
+  { name: "New York City",      coords: [-74.0060,   40.7128] },
+  { name: "Great Barrier Reef", coords: [147.6992,  -18.2871] },
 ];
 
-let markerSelection;
+let currentTransform = d3.zoomIdentity;
 
-// Load map
 d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
   .then(world => {
-
     const countries = topojson.feature(world, world.objects.countries).features;
 
-    // Draw countries
     mapLayer.selectAll("path")
       .data(countries)
       .enter()
       .append("path")
       .attr("class", "country")
-      .attr("fill", d => {
-        const name = d.properties.name;
-        return highlight.has(name) ? "#4a90e2" : "#d3d3d3";
-      })
+      .attr("fill", d => highlight.has(d.properties.name) ? "#4a90e2" : "#d3d3d3")
       .attr("d", path);
 
-    // Create markers
-    markerSelection = markerLayer.selectAll(".marker")
+    // Each marker is positioned in screen space and never part of the zoom transform.
+    // Pins and labels stay pixel-perfect at every zoom level on both desktop and mobile.
+    const markerGs = markerLayer.selectAll(".marker")
       .data(markers)
       .enter()
       .append("g")
       .attr("class", "marker");
 
-    // Pin
-    markerSelection.append("circle")
-      .attr("class", "pin-circle")
-      .attr("r", 4);
+    markerGs.append("circle")
+      .attr("class", "marker-dot")
+      .attr("r", DOT_R);
 
-    // Label group
-    const label = markerSelection.append("g")
-      .attr("transform", "translate(8, -6)");
+    const labelGs = markerGs.append("g").attr("class", "label-group");
 
-    const text = label.append("text")
+    labelGs.append("text")
       .attr("class", "label-text")
-      .attr("x", 4)
-      .attr("y", 12)
+      .attr("x", LABEL_DX)
+      .attr("y", LABEL_DY)
+      .style("font-size", `${FONT_SIZE}px`)
       .text(d => d.name);
 
-    // Label box
-    label.each(function() {
-      const textNode = d3.select(this).select("text").node();
-      const bbox = textNode.getBBox();
-
-      d3.select(this)
-        .insert("rect", "text")
-        .attr("class", "label-box")
-        .attr("x", bbox.x - 4)
-        .attr("y", bbox.y - 2)
-        .attr("width", bbox.width + 8)
-        .attr("height", bbox.height + 4);
+    // Size bg rects after text is in the DOM
+    labelGs.each(function () {
+      const bb = this.querySelector("text").getBBox();
+      d3.select(this).insert("rect", "text")
+        .attr("class", "label-bg")
+        .attr("x",      bb.x - PAD_X)
+        .attr("y",      bb.y - PAD_Y)
+        .attr("width",  bb.width  + PAD_X * 2)
+        .attr("height", bb.height + PAD_Y * 2)
+        .attr("rx", 3);
     });
 
-    // Initial position
-    updateMarkers(d3.zoomIdentity);
+    positionMarkers(currentTransform);
   });
 
-// Update marker positions
-function updateMarkers(transform) {
-  markerSelection.attr("transform", d => {
-    const [x, y] = projection(d.coords);
-    const [tx, ty] = transform.apply([x, y]);
-    return `translate(${tx}, ${ty})`;
+function positionMarkers(t) {
+  markerLayer.selectAll(".marker").attr("transform", d => {
+    const [sx, sy] = projection(d.coords);
+    const [px, py] = t.apply([sx, sy]);
+    return `translate(${px},${py})`;
   });
 }
 
-// Zoom behavior
 const zoom = d3.zoom()
-  .scaleExtent([1, 5])
+  .scaleExtent([1, 12])
   .translateExtent([[0, 0], [width, height]])
-  .on("zoom", (event) => {
-    const transform = event.transform;
-
-    mapLayer.attr("transform", transform);
-    updateMarkers(transform);
+  .on("zoom", event => {
+    currentTransform = event.transform;
+    mapLayer.attr("transform", currentTransform);
+    positionMarkers(currentTransform);
   });
 
 svg.call(zoom);
 </script>
-
 </body>
 </html>
