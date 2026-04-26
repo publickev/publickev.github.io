@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/topojson@3"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { overflow: hidden; background: #f5e6a8; }
+    body { overflow: hidden; background: #ffffff; }
 
     #container {
       width: 100vw; height: 100vh;
@@ -20,7 +20,7 @@
       width: 100%; height: 100%;
     }
     #flat-svg  { background: #ffffff; display: block; }
-    #globe-svg { background: #0b1622; display: none; }
+    #globe-svg { background: #0b1622; display: none; touch-action: none; }
 
     /* ── Shared country styles ── */
     .country { stroke: #fff; stroke-width: 0.4; }
@@ -74,17 +74,28 @@
     /* ── Toggle button ── */
     #toggle-btn {
       position: fixed; top: 16px; right: 16px; z-index: 200;
-      padding: 8px 18px; border: none; border-radius: 20px;
+      padding: 10px 22px; border: none; border-radius: 24px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+      font-size: 15px; font-weight: 600; letter-spacing: 0.04em;
       cursor: pointer; user-select: none;
       backdrop-filter: blur(8px);
       transition: background 0.2s, color 0.2s, transform 0.1s;
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      touch-action: manipulation;
+      min-width: 44px; min-height: 44px;
+    }
+    @media (max-width: 640px) {
+      #toggle-btn {
+        top: 14px; right: 14px;
+        padding: 14px 26px;
+        font-size: 17px; border-radius: 28px;
+        box-shadow: 0 3px 16px rgba(0,0,0,0.25);
+      }
     }
     body.mode-flat  #toggle-btn { background: rgba(30,70,150,0.15); color: #1a3a6e; }
     body.mode-globe #toggle-btn { background: rgba(255,255,255,0.15); color: #deeeff; }
     #toggle-btn:hover { transform: scale(1.04); }
+    #toggle-btn:active { transform: scale(0.97); }
 
     /* ── Hint ── */
     #hint {
@@ -146,6 +157,7 @@
     <circle id="globe-rim"   style="fill:none; stroke:rgba(120,190,255,0.65); stroke-width:2.5;
                                     filter:drop-shadow(0 0 9px rgba(80,160,255,0.85))"/>
     <g id="globe-markers"></g>
+    <g id="globe-labels"></g>
   </svg>
 
 </div>
@@ -359,65 +371,204 @@ function initGlobe(countries) {
   globeCG.selectAll('path').data(countries).enter().append('path')
     .attr('class','country')
     .attr('fill', d => cfill(d.properties && d.properties.name));
-  buildMarkers(globeMG, true);
-  renderGlobe();
-}
 
-function globeOnScreen(coords) {
-  const [lon, lat] = coords;
-  const [rl, rp] = [-gRotate[0], -gRotate[1]];
-  return (
-    Math.sin(lat*Math.PI/180)*Math.sin(rp*Math.PI/180) +
-    Math.cos(lat*Math.PI/180)*Math.cos(rp*Math.PI/180)*Math.cos((lon-rl)*Math.PI/180)
-  ) > 0.02;
+  // Dots only — no label children
+  d3.select('#globe-markers').selectAll('.gdot').data(MARKERS).enter()
+    .append('circle').attr('class','gdot marker-dot')
+    .attr('r', DOT_R).style('stroke-width', 1.5);
+
+  // Label layer — one group per marker, absolutely positioned
+  const lbls = d3.select('#globe-labels').selectAll('.glabel').data(MARKERS).enter()
+    .append('g').attr('class','glabel label-group');
+  lbls.append('line').attr('class','leader-line');
+  const content = lbls.append('g').attr('class','label-content');
+  content.append('text').attr('class','label-text')
+    .style('font-size', `${FONT_SIZE}px`).text(d => d.name);
+  // measure then insert bg rect
+  lbls.each(function(d) {
+    if (d._tw) return;
+    const bb = this.querySelector('text').getBBox();
+    d._tw = bb.width; d._th = bb.height;
+  });
+  content.insert('rect','text').attr('class','label-bg').attr('rx', 3);
+
+  renderGlobe();
 }
 
 function updateGlobeMarkers() {
-  globeMG.selectAll('.marker').each(function(d) {
+  // ── 1. Project all markers ──────────────────────────────
+  const items = MARKERS.map(d => {
     const vis  = globeOnScreen(d.coords);
-    const proj = globeProj(d.coords);
-    if (!proj) return;
-    const [px, py] = proj;
-    const g = d3.select(this);
-    g.attr('transform', `translate(${px},${py})`).style('opacity', vis?1:0).style('pointer-events', vis?null:'none');
-    const show = vis && labelVisible(d.p, gZoom);
-    g.select('.label-group').style('opacity', show ? 1 : 0);
-    if (!show || !d._tw) return;
-    const rx = LDX, ry = LDY - (d._th||FONT_SIZE)/2;
-    g.select('.leader-line').attr('x1', DOT_R*0.7).attr('y1',0).attr('x2',rx).attr('y2', ry+(d._th||FONT_SIZE)/2+PAD_Y);
-    const cg = g.select('.label-content').attr('transform',`translate(${rx},${ry})`);
-    cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',(d._tw||0)+PAD_X*2).attr('height',(d._th||0)+PAD_Y*2);
-    cg.select('text').attr('x',0).attr('y',(d._th||FONT_SIZE)/2);
+    const proj = vis ? globeProj(d.coords) : null;
+    return {
+      d,
+      vis: vis && !!proj,
+      px: proj ? proj[0] : -9999,
+      py: proj ? proj[1] : -9999,
+    };
+  });
+
+  // ── 2. Decide which labels show (priority + zoom gating) ─
+  items.forEach((a, i) => {
+    if (!a.vis || !labelVisible(a.d.p, gZoom)) { a.show = false; return; }
+    a.show = true;
+  });
+
+  // ── 3. Compute initial label boxes in absolute screen coords ─
+  const LH_PAD = PAD_Y * 2, LW_PAD = PAD_X * 2;
+  items.forEach(a => {
+    a.lw = (a.d._tw || 60) + LW_PAD;
+    a.lh = (a.d._th || FONT_SIZE) + LH_PAD;
+    // Anchor: to the right of dot, vertically centred
+    a.lx = a.px + LDX;
+    a.ly = a.py - a.lh / 2;
+  });
+
+  // ── 4. Push overlapping labels apart (absolute coords) ───
+  const MARGIN = 3;
+  const shown  = items.filter(a => a.show);
+  for (let iter = 0; iter < 60; iter++) {
+    let moved = false;
+    for (let i = 0; i < shown.length; i++) {
+      for (let j = i + 1; j < shown.length; j++) {
+        const a = shown[i], b = shown[j];
+        const ox = Math.min(a.lx+a.lw, b.lx+b.lw) - Math.max(a.lx, b.lx) + MARGIN;
+        const oy = Math.min(a.ly+a.lh, b.ly+b.lh) - Math.max(a.ly, b.ly) + MARGIN;
+        if (ox > 0 && oy > 0) {
+          // resolve along whichever axis has less overlap
+          if (oy <= ox) {
+            const p = oy / 2;
+            a.ly < b.ly ? (a.ly -= p, b.ly += p) : (a.ly += p, b.ly -= p);
+          } else {
+            const p = ox / 2;
+            a.lx < b.lx ? (a.lx -= p, b.lx += p) : (a.lx += p, b.lx -= p);
+          }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  // ── 5. Apply dots ────────────────────────────────────────
+  d3.select('#globe-markers').selectAll('.gdot').each(function(d, i) {
+    const inf = items[i];
+    d3.select(this)
+      .attr('cx', inf.px).attr('cy', inf.py)
+      .style('opacity', inf.vis ? 1 : 0)
+      .style('pointer-events', inf.vis ? null : 'none');
+  });
+
+  // ── 6. Apply labels (all absolute, no group inheritance) ─
+  d3.select('#globe-labels').selectAll('.glabel').each(function(d, i) {
+    const inf = items[i];
+    const g   = d3.select(this);
+    g.style('opacity', inf.show ? 1 : 0);
+    if (!inf.show || !d._tw) return;
+
+    // Label top-left in absolute screen space
+    const lx = inf.lx, ly = inf.ly;
+    const midY = ly + inf.lh / 2;  // vertical centre of label box
+
+    // Leader line: from dot to left-centre of label box
+    g.select('.leader-line')
+      .attr('x1', inf.px + DOT_R * 0.8)
+      .attr('y1', inf.py)
+      .attr('x2', lx)
+      .attr('y2', midY);
+
+    // Label content group at absolute position
+    g.select('.label-content')
+      .attr('transform', `translate(${lx},${ly})`);
+
+    g.select('rect')
+      .attr('x', -PAD_X).attr('y', -PAD_Y)
+      .attr('width',  d._tw + PAD_X * 2)
+      .attr('height', d._th + PAD_Y * 2);
+
+    g.select('text')
+      .attr('x', 0)
+      .attr('y', d._th / 2);
   });
 }
 
-/* Globe drag */
+/* Globe drag + pinch-to-zoom */
 let dragStart = null, rotStart = null;
+let pinchStart = null, pinchZoomStart = null;
+
+function getTouches(e) {
+  return Array.from(e.touches || []);
+}
+function pinchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
 function onDown(e) {
   if (e.button && e.button !== 0) return;
-  e.preventDefault(); autoSpin = false;
-  const p = e.touches ? e.touches[0] : e;
-  dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
-  window.addEventListener('mousemove', onMove, {passive:false});
-  window.addEventListener('touchmove', onMove, {passive:false});
-  window.addEventListener('mouseup',   onUp);
-  window.addEventListener('touchend',  onUp);
+  e.preventDefault();
+  autoSpin = false;
+  const touches = getTouches(e);
+
+  if (touches.length === 2) {
+    // Pinch start
+    pinchStart = pinchDist(touches);
+    pinchZoomStart = gZoom;
+    dragStart = null;
+  } else {
+    // Single touch or mouse drag
+    const p = touches.length ? touches[0] : e;
+    dragStart = [p.clientX, p.clientY];
+    rotStart  = [...gRotate];
+    pinchStart = null;
+  }
+  window.addEventListener('mousemove',  onMove, {passive:false});
+  window.addEventListener('touchmove',  onMove, {passive:false});
+  window.addEventListener('mouseup',    onUp);
+  window.addEventListener('touchend',   onUp);
 }
+
 function onMove(e) {
-  if (!dragStart) return; e.preventDefault();
-  const p = e.touches ? e.touches[0] : e;
-  const dx = p.clientX - dragStart[0], dy = p.clientY - dragStart[1];
-  const s = 0.35 / gZoom;
+  e.preventDefault();
+  const touches = getTouches(e);
+
+  if (touches.length === 2 && pinchStart !== null) {
+    // Pinch zoom
+    const dist = pinchDist(touches);
+    gZoom = Math.max(0.5, Math.min(8, pinchZoomStart * (dist / pinchStart)));
+    // Also handle rotation from midpoint drag
+    renderGlobe();
+    return;
+  }
+
+  if (!dragStart) return;
+  const p = touches.length ? touches[0] : e;
+  const dx = p.clientX - dragStart[0];
+  const dy = p.clientY - dragStart[1];
+  const s  = 0.35 / gZoom;
   gRotate = [rotStart[0]+dx*s, Math.max(-85,Math.min(85,rotStart[1]-dy*s)), rotStart[2]];
   renderGlobe();
 }
-function onUp() {
-  dragStart = null;
+
+function onUp(e) {
+  const touches = getTouches(e);
+  // If lifting one finger during pinch, reset to single-touch drag state
+  if (touches.length === 1) {
+    const p = touches[0];
+    dragStart = [p.clientX, p.clientY];
+    rotStart  = [...gRotate];
+    pinchStart = null;
+    return;
+  }
+  dragStart  = null;
+  pinchStart = null;
   window.removeEventListener('mousemove', onMove);
   window.removeEventListener('touchmove', onMove);
   window.removeEventListener('mouseup',   onUp);
   window.removeEventListener('touchend',  onUp);
 }
+
 function onWheel(e) {
   e.preventDefault();
   gZoom = Math.max(0.5, Math.min(8, gZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
@@ -446,16 +597,17 @@ function buildMarkers(container, isGlobe) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   COLLISION RESOLUTION (flat only)
+   COLLISION RESOLUTION
 ═══════════════════════════════════════════════════════════ */
 function resolveCollisions(positions) {
   const M = 4;
   for (let it = 0; it < 15; it++) {
     let moved = false;
     for (let i = 0; i < positions.length; i++) {
-      if (!positions[i].vis) continue;
+      // works with either .vis (flat) or .show (globe)
+      if (!positions[i].vis && !positions[i].show) continue;
       for (let j = i+1; j < positions.length; j++) {
-        if (!positions[j].vis) continue;
+        if (!positions[j].vis && !positions[j].show) continue;
         const a = positions[i], b = positions[j];
         const ox = Math.min(a.lx+a.lw,b.lx+b.lw)-Math.max(a.lx,b.lx)+M;
         const oy = Math.min(a.ly+a.lh,b.ly+b.lh)-Math.max(a.ly,b.ly)+M;
