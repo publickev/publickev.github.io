@@ -82,6 +82,17 @@
       transition: background 0.2s, color 0.2s, transform 0.1s;
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
     }
+    
+    /* MOBILE OPTIMIZATION: Bigger button for touch screens */
+    @media (max-width: 640px) {
+      #toggle-btn {
+        top: 20px; right: 20px;
+        padding: 14px 24px;
+        font-size: 16px;
+        border-radius: 30px;
+      }
+    }
+
     body.mode-flat  #toggle-btn { background: rgba(30,70,150,0.15); color: #1a3a6e; }
     body.mode-globe #toggle-btn { background: rgba(255,255,255,0.15); color: #deeeff; }
     #toggle-btn:hover { transform: scale(1.04); }
@@ -99,16 +110,13 @@
 <body class="mode-flat">
 <div id="container">
 
-  <!-- ══ FLAT MAP SVG ══════════════════════════════════════ -->
   <svg id="flat-svg">
     <defs>
       <clipPath id="flat-clip">
         <path id="flat-clip-path"/>
       </clipPath>
     </defs>
-    <!-- Everything zoomable lives in one group -->
     <g id="flat-zoom-group">
-      <!-- Sphere fill so ocean shows inside the outline -->
       <path id="flat-sphere-fill" style="fill:#cfe8ff"/>
       <g id="flat-countries"></g>
       <path id="flat-outline" class="flat-outline"/>
@@ -116,7 +124,6 @@
     </g>
   </svg>
 
-  <!-- ══ GLOBE SVG ═════════════════════════════════════════ -->
   <svg id="globe-svg">
     <defs>
       <radialGradient id="ocean-grad" cx="34%" cy="30%" r="65%" gradientUnits="objectBoundingBox">
@@ -133,15 +140,12 @@
         <circle id="globe-clip-c"/>
       </clipPath>
     </defs>
-    <!-- Stars sit behind everything -->
     <g id="stars"></g>
-    <!-- Layer order matters: ocean → graticule+countries (clipped) → sheen → rim -->
     <circle id="globe-ocean" style="fill:url(#ocean-grad)"/>
     <g clip-path="url(#globe-clip)">
       <g id="globe-graticule"></g>
       <g id="globe-countries"></g>
     </g>
-    <!-- Sheen and rim sit ABOVE the clipped content -->
     <circle id="globe-sheen" style="fill:url(#sheen-grad); pointer-events:none"/>
     <circle id="globe-rim"   style="fill:none; stroke:rgba(120,190,255,0.65); stroke-width:2.5;
                                     filter:drop-shadow(0 0 9px rgba(80,160,255,0.85))"/>
@@ -162,8 +166,8 @@ const W = window.innerWidth, H = window.innerHeight;
 const DOT_R     = isMobile ? 7 : 5;
 const FONT_SIZE = isMobile ? 17 : 13;
 const PAD_X = 5, PAD_Y = 3;
-const LDX = DOT_R + 6;   // label offset x
-const LDY = -FONT_SIZE * 0.6; // label offset y
+const LDX = DOT_R + 6;   
+const LDY = -FONT_SIZE * 0.6;
 
 const HIGHLIGHT = new Set([
   "United States of America","Australia","China","Japan",
@@ -216,7 +220,6 @@ function cfill(name) {
   const rand      = (a, b) => a + Math.random() * (b - a);
   const COUNT     = 320;
 
-  // Seed a simple pseudo-random so stars are stable (not re-randomised each frame)
   for (let i = 0; i < COUNT; i++) {
     const x    = rand(0, W);
     const y    = rand(0, H);
@@ -224,7 +227,6 @@ function cfill(name) {
     const cls  = classes[Math.floor(Math.random() * 3)];
     const dur  = rand(1.8, 5.5).toFixed(2) + 's';
     const del  = rand(0, 5).toFixed(2)     + 's';
-    // Slight blue-white colour tint variety
     const tint = Math.random() > 0.7
       ? `rgba(${180+Math.floor(rand(0,75))},${200+Math.floor(rand(0,55))},255,1)`
       : '#ffffff';
@@ -262,9 +264,7 @@ const flatZoom = d3.zoom()
   });
 
 function initFlatMap(countries) {
-  // Ocean fill for the sphere interior (so background stays blue when zoomed in)
   d3.select('#flat-sphere-fill').datum({type:'Sphere'}).attr('d', flatPath);
-  // Outline path (inside the zoom group — moves with zoom)
   d3.select('#flat-outline').datum({type:'Sphere'}).attr('d', flatPath);
 
   flatCG.selectAll('path').data(countries).enter().append('path')
@@ -294,11 +294,7 @@ function updateFlatMarkers() {
     const inf = positions[i];
     const g = d3.select(this);
     g.attr('transform', `translate(${inf.px},${inf.py})`);
-
-    // Counter-scale dot and its stroke so both stay constant screen size
-    g.select('.marker-dot')
-      .attr('r', DOT_R * invK)
-      .style('stroke-width', 1.5 * invK);
+    g.select('.marker-dot').attr('r', DOT_R * invK).style('stroke-width', 1.5 * invK);
 
     const lg = g.select('.label-group');
     lg.style('opacity', inf.vis ? 1 : 0);
@@ -307,7 +303,6 @@ function updateFlatMarkers() {
     const rx = inf.lx - inf.px;
     const ry = inf.ly - inf.py;
 
-    // Counter-scale leader line stroke and dash pattern
     lg.select('.leader-line')
       .attr('x1', DOT_R * invK * 0.7).attr('y1', 0)
       .attr('x2', rx).attr('y2', ry + inf.lh / 2)
@@ -391,33 +386,66 @@ function updateGlobeMarkers() {
   });
 }
 
-/* Globe drag */
+/* ── UPDATED GLOBE INTERACTIONS: DRAG + PINCH ZOOM ── */
 let dragStart = null, rotStart = null;
+let lastPinchDist = null;
+
+function getDist(t1, t2) {
+  return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+}
+
 function onDown(e) {
   if (e.button && e.button !== 0) return;
   e.preventDefault(); autoSpin = false;
-  const p = e.touches ? e.touches[0] : e;
-  dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
+
+  if (e.touches && e.touches.length === 2) {
+    // Start Pinch
+    lastPinchDist = getDist(e.touches[0], e.touches[1]);
+  } else {
+    // Start Drag
+    const p = e.touches ? e.touches[0] : e;
+    dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
+  }
+
   window.addEventListener('mousemove', onMove, {passive:false});
   window.addEventListener('touchmove', onMove, {passive:false});
   window.addEventListener('mouseup',   onUp);
   window.addEventListener('touchend',  onUp);
 }
+
 function onMove(e) {
-  if (!dragStart) return; e.preventDefault();
+  e.preventDefault();
+
+  // Pinch Logic
+  if (e.touches && e.touches.length === 2) {
+    const dist = getDist(e.touches[0], e.touches[1]);
+    if (lastPinchDist) {
+      const delta = dist / lastPinchDist;
+      gZoom = Math.max(0.5, Math.min(8, gZoom * delta));
+      renderGlobe();
+    }
+    lastPinchDist = dist;
+    return;
+  }
+
+  // Rotation Logic
+  if (!dragStart) return;
   const p = e.touches ? e.touches[0] : e;
   const dx = p.clientX - dragStart[0], dy = p.clientY - dragStart[1];
   const s = 0.35 / gZoom;
   gRotate = [rotStart[0]+dx*s, Math.max(-85,Math.min(85,rotStart[1]-dy*s)), rotStart[2]];
   renderGlobe();
 }
+
 function onUp() {
   dragStart = null;
+  lastPinchDist = null;
   window.removeEventListener('mousemove', onMove);
   window.removeEventListener('touchmove', onMove);
   window.removeEventListener('mouseup',   onUp);
   window.removeEventListener('touchend',  onUp);
 }
+
 function onWheel(e) {
   e.preventDefault();
   gZoom = Math.max(0.5, Math.min(8, gZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
@@ -434,9 +462,9 @@ function buildMarkers(container, isGlobe) {
   lgs.append('line').attr('class','leader-line').attr('x1',0).attr('y1',0);
   lgs.append('g').attr('class','label-content')
     .append('text').attr('class','label-text').style('font-size',`${FONT_SIZE}px`).text(d=>d.name);
-  // measure bounding boxes (only need to do once — reuse across both svgs)
+
   lgs.each(function(d) {
-    if (d._tw) return; // already measured
+    if (d._tw) return;
     const bb = this.querySelector('text').getBBox();
     d._tw = bb.width; d._th = bb.height;
   });
@@ -445,9 +473,6 @@ function buildMarkers(container, isGlobe) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   COLLISION RESOLUTION (flat only)
-═══════════════════════════════════════════════════════════ */
 function resolveCollisions(positions) {
   const M = 4;
   for (let it = 0; it < 15; it++) {
@@ -482,14 +507,14 @@ function switchToGlobe() {
   document.getElementById('flat-svg').style.display  = 'none';
   document.getElementById('globe-svg').style.display = 'block';
   document.getElementById('toggle-btn').textContent  = '🗺️ Flat Map';
-  document.getElementById('hint').textContent        = 'Drag to rotate · Scroll to zoom';
-  // Detach flat zoom
+  document.getElementById('hint').textContent        = 'Drag to rotate · Pinch to zoom';
   flatSvg.on('.zoom', null);
-  // Attach globe interactions
-  document.getElementById('globe-svg').addEventListener('mousedown',  onDown, {passive:false});
-  document.getElementById('globe-svg').addEventListener('touchstart', onDown, {passive:false});
-  document.getElementById('globe-svg').addEventListener('wheel',      onWheel,{passive:false});
-  // Auto-spin
+  
+  const gs = document.getElementById('globe-svg');
+  gs.addEventListener('mousedown',  onDown, {passive:false});
+  gs.addEventListener('touchstart', onDown, {passive:false});
+  gs.addEventListener('wheel',      onWheel,{passive:false});
+  
   autoSpin = true;
   (function spin() {
     if (!autoSpin || mode !== 'globe') return;
@@ -506,12 +531,12 @@ function switchToFlat() {
   document.getElementById('toggle-btn').textContent  = '🌍 Globe View';
   document.getElementById('hint').textContent        = 'Scroll to zoom · Drag to pan';
   autoSpin = false;
-  // Detach globe interactions
+  
   const gs = document.getElementById('globe-svg');
   gs.removeEventListener('mousedown',  onDown);
   gs.removeEventListener('touchstart', onDown);
   gs.removeEventListener('wheel',      onWheel);
-  // Re-attach flat zoom (restores saved transform)
+  
   flatSvg.call(flatZoom).call(flatZoom.transform, flatT);
   updateFlatMarkers();
 }
@@ -520,14 +545,10 @@ document.getElementById('toggle-btn').addEventListener('click', () => {
   if (mode === 'flat') switchToGlobe(); else switchToFlat();
 });
 
-/* ═══════════════════════════════════════════════════════════
-   LOAD & INIT
-═══════════════════════════════════════════════════════════ */
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(world => {
   const countries = topojson.feature(world, world.objects.countries).features;
   initFlatMap(countries);
   initGlobe(countries);
-  // Start in flat mode
   flatSvg.call(flatZoom);
   updateFlatMarkers();
 });
