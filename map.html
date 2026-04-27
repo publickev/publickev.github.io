@@ -40,8 +40,8 @@
 
     /* ── Shared marker/label styles ── */
     .marker-dot {
-      fill: #e03030; stroke: #fff;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+      fill: #e03030; stroke: #fff; stroke-width: 2;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
       cursor: pointer;
     }
     .label-text {
@@ -120,7 +120,10 @@
       <path id="flat-sphere-fill" style="fill:#cfe8ff"/>
       <g id="flat-countries"></g>
       <path id="flat-outline" class="flat-outline"/>
-      <g id="flat-markers"></g>
+      <g id="flat-markers">
+        <g id="flat-marker-dots"></g>
+        <g id="flat-marker-labels"></g>
+      </g>
     </g>
   </svg>
 
@@ -149,7 +152,10 @@
     <circle id="globe-sheen" style="fill:url(#sheen-grad); pointer-events:none"/>
     <circle id="globe-rim"   style="fill:none; stroke:rgba(120,190,255,0.65); stroke-width:2.5;
                                     filter:drop-shadow(0 0 9px rgba(80,160,255,0.85))"/>
-    <g id="globe-markers"></g>
+    <g id="globe-markers">
+      <g id="globe-marker-dots"></g>
+      <g id="globe-marker-labels"></g>
+    </g>
   </svg>
 
 </div>
@@ -249,7 +255,8 @@ generateStars();
 const flatSvg    = d3.select('#flat-svg');
 const flatZoomG  = d3.select('#flat-zoom-group');
 const flatCG     = d3.select('#flat-countries');
-const flatMG     = d3.select('#flat-markers');
+const flatMDotsG  = d3.select('#flat-marker-dots');
+const flatMLabsG  = d3.select('#flat-marker-labels');
 
 const flatProj = d3.geoNaturalEarth1().scale(W / 6.5).translate([W/2, H/2]);
 const flatPath = d3.geoPath(flatProj);
@@ -274,7 +281,7 @@ function initFlatMap(countries) {
     .attr('fill', d => cfill(d.properties && d.properties.name))
     .attr('d', flatPath);
 
-  buildMarkers(flatMG, false);
+  buildMarkers(flatMDotsG, flatMLabsG);
   flatSvg.call(flatZoom);
   updateFlatMarkers();
 }
@@ -295,13 +302,21 @@ function updateFlatMarkers() {
   
   resolveCollisions(positions);
   
-  flatMG.selectAll('.marker').each(function(d, i) {
+  // Update dots
+  flatMDotsG.selectAll('.marker-dot-wrap').each(function(d, i) {
     const inf = positions[i];
-    const g = d3.select(this);
-    g.attr('transform', `translate(${inf.px},${inf.py})`);
-    g.select('.marker-dot').attr('r', DOT_R * inf.invK).style('stroke-width', 1.5 * inf.invK);
+    d3.select(this)
+      .attr('transform', `translate(${inf.px},${inf.py})`);
+    d3.select(this).select('.marker-dot')
+      .attr('r', DOT_R * inf.invK)
+      .style('stroke-width', 1.5 * inf.invK);
+  });
 
-    const lg = g.select('.label-group');
+  // Update labels
+  flatMLabsG.selectAll('.marker-label').each(function(d, i) {
+    const inf = positions[i];
+    const lg = d3.select(this);
+    lg.attr('transform', `translate(${inf.px},${inf.py})`);
     lg.style('opacity', inf.vis ? 1 : 0);
     if (!inf.vis || !d._tw) return;
 
@@ -324,16 +339,20 @@ function updateFlatMarkers() {
 /* ═══════════════════════════════════════════════════════════
    GLOBE
 ═══════════════════════════════════════════════════════════ */
-const globeSvg  = d3.select('#globe-svg');
-const globeCG   = d3.select('#globe-countries');
-const globeMG   = d3.select('#globe-markers');
-const globeGrat = d3.select('#globe-graticule');
+const globeSvg   = d3.select('#globe-svg');
+const globeCG    = d3.select('#globe-countries');
+const globeMDotsG = d3.select('#globe-marker-dots');
+const globeMLabsG = d3.select('#globe-marker-labels');
+const globeGrat  = d3.select('#globe-graticule');
 
 let gRotate = [-20, -25, 0];
 let gZoom   = 1;
 let autoSpin = false;
 
 const globeProj = d3.geoOrthographic().clipAngle(90).precision(0.5);
+const globePath = d3.geoPath(globeProj); // cached — reused every frame
+
+let globeRAF = null;
 
 function getGlobeR0() { return Math.min(W, H) / 2.1; }
 
@@ -349,10 +368,18 @@ function setGlobeCircles() {
 
 function renderGlobe() {
   setGlobeCircles();
-  const gp = d3.geoPath(globeProj);
-  globeCG.selectAll('path').attr('d', gp);
-  globeGrat.selectAll('path').attr('d', gp);
+  globeCG.selectAll('path').attr('d', globePath);
+  globeGrat.selectAll('path').attr('d', globePath);
   updateGlobeMarkers();
+}
+
+// Schedule at most one render per animation frame
+function scheduleGlobeRender() {
+  if (globeRAF) return;
+  globeRAF = requestAnimationFrame(() => {
+    globeRAF = null;
+    renderGlobe();
+  });
 }
 
 function initGlobe(countries) {
@@ -360,7 +387,7 @@ function initGlobe(countries) {
   globeCG.selectAll('path').data(countries).enter().append('path')
     .attr('class','country')
     .attr('fill', d => cfill(d.properties && d.properties.name));
-  buildMarkers(globeMG, true);
+  buildMarkers(globeMDotsG, globeMLabsG);
   renderGlobe();
 }
 
@@ -377,38 +404,44 @@ function updateGlobeMarkers() {
   const positions = MARKERS.map(d => {
     const onScreen = globeOnScreen(d.coords);
     const proj = globeProj(d.coords);
-    if (!proj || !onScreen) return { vis: false };
+    if (!proj || !onScreen) return { hidden: true, vis: false };
     
     const [px, py] = proj;
     const vis = labelVisible(d.p, gZoom);
     const lw = (d._tw || 80) + PAD_X * 2;
     const lh = (d._th || 20) + PAD_Y * 2;
     
-    return {
-      d, vis, px, py, 
-      lx: px + LDX, 
-      ly: py + LDY - lh/2, 
-      lw, lh
-    };
+    return { hidden: false, d, vis, px, py, lx: px + LDX, ly: py + LDY - lh/2, lw, lh };
   });
 
   resolveCollisions(positions);
 
-  globeMG.selectAll('.marker').each(function(d, i) {
+  // Update dots
+  globeMDotsG.selectAll('.marker-dot-wrap').each(function(d, i) {
     const inf = positions[i];
     const g = d3.select(this);
-    
-    if (!inf.px) {
+    if (inf.hidden) {
       g.style('opacity', 0).style('pointer-events', 'none');
       return;
     }
-
     g.attr('transform', `translate(${inf.px},${inf.py})`)
      .style('opacity', 1)
      .style('pointer-events', 'auto');
+  });
 
-    const lg = g.select('.label-group');
-    lg.style('opacity', inf.vis ? 1 : 0);
+  // Update labels
+  globeMLabsG.selectAll('.marker-label').each(function(d, i) {
+    const inf = positions[i];
+    const lg = d3.select(this);
+    
+    if (inf.hidden) {
+      lg.style('opacity', 0).style('pointer-events', 'none');
+      return;
+    }
+
+    lg.attr('transform', `translate(${inf.px},${inf.py})`)
+     .style('opacity', inf.vis ? 1 : 0)
+     .style('pointer-events', 'auto');
 
     if (inf.vis && d._tw) {
       const rx = inf.lx - inf.px;
@@ -457,7 +490,7 @@ function onMove(e) {
     if (lastPinchDist) {
       const delta = dist / lastPinchDist;
       gZoom = Math.max(0.5, Math.min(8, gZoom * delta));
-      renderGlobe();
+      scheduleGlobeRender();
     }
     lastPinchDist = dist;
     return;
@@ -467,7 +500,7 @@ function onMove(e) {
   const dx = p.clientX - dragStart[0], dy = p.clientY - dragStart[1];
   const s = 0.35 / gZoom;
   gRotate = [rotStart[0]+dx*s, Math.max(-85,Math.min(85,rotStart[1]-dy*s)), rotStart[2]];
-  renderGlobe();
+  scheduleGlobeRender();
 }
 
 function onUp() {
@@ -482,27 +515,40 @@ function onUp() {
 function onWheel(e) {
   e.preventDefault();
   gZoom = Math.max(0.5, Math.min(8, gZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
-  renderGlobe();
+  scheduleGlobeRender();
 }
 
 /* ═══════════════════════════════════════════════════════════
    SHARED MARKER BUILDER
 ═══════════════════════════════════════════════════════════ */
-function buildMarkers(container, isGlobe) {
-  const mgs = container.selectAll('.marker').data(MARKERS).enter().append('g').attr('class','marker');
-  mgs.append('circle').attr('class','marker-dot').attr('r', DOT_R).style('stroke-width', 1.5);
-  const lgs = mgs.append('g').attr('class','label-group');
-  lgs.append('line').attr('class','leader-line').attr('x1',0).attr('y1',0);
-  lgs.append('g').attr('class','label-content')
-    .append('text').attr('class','label-text').style('font-size',`${FONT_SIZE}px`).text(d=>d.name);
+function buildMarkers(dotsContainer, labelsContainer) {
+  // ── Dots layer (rendered below labels) ──
+  dotsContainer.selectAll('.marker-dot-wrap')
+    .data(MARKERS).enter()
+    .append('g').attr('class', 'marker-dot-wrap')
+    .append('circle').attr('class', 'marker-dot')
+    .attr('r', DOT_R).style('stroke-width', 1.5);
 
+  // ── Labels layer (rendered above dots) ──
+  const lgs = labelsContainer.selectAll('.marker-label')
+    .data(MARKERS).enter()
+    .append('g').attr('class', 'marker-label');
+
+  lgs.append('line').attr('class', 'leader-line').attr('x1', 0).attr('y1', 0);
+  lgs.append('g').attr('class', 'label-content')
+    .append('text').attr('class', 'label-text')
+    .style('font-size', `${FONT_SIZE}px`).text(d => d.name);
+
+  // Measure text dimensions (only first time, shared across both views)
   lgs.each(function(d) {
     if (d._tw) return;
     const bb = this.querySelector('text').getBBox();
     d._tw = bb.width; d._th = bb.height;
   });
+
+  // Insert background rect behind text
   lgs.each(function(d) {
-    d3.select(this).select('.label-content').insert('rect','text').attr('class','label-bg').attr('rx',3);
+    d3.select(this).select('.label-content').insert('rect', 'text').attr('class', 'label-bg').attr('rx', 3);
   });
 }
 
@@ -511,9 +557,9 @@ function resolveCollisions(positions) {
   for (let it = 0; it < 15; it++) {
     let moved = false;
     for (let i = 0; i < positions.length; i++) {
-      if (!positions[i].vis) continue;
+      if (!positions[i].vis || positions[i].hidden) continue;
       for (let j = i+1; j < positions.length; j++) {
-        if (!positions[j].vis) continue;
+        if (!positions[j].vis || positions[j].hidden) continue;
         const a = positions[i], b = positions[j];
         const ox = Math.min(a.lx+a.lw,b.lx+b.lw)-Math.max(a.lx,b.lx)+M;
         const oy = Math.min(a.ly+a.lh,b.ly+b.lh)-Math.max(a.ly,b.ly)+M;
@@ -551,8 +597,6 @@ function onResize() {
     flatZoom.translateExtent([[0,0],[W,H]]);
     flatSvg.call(flatZoom.transform, flatT);
     updateFlatMarkers();
-
-    // Update globe
     generateStars();
     renderGlobe();
   }, 120);
@@ -584,7 +628,8 @@ function switchToGlobe() {
   autoSpin = true;
   (function spin() {
     if (!autoSpin || mode !== 'globe') return;
-    gRotate[0] += 0.12; renderGlobe();
+    gRotate[0] += 0.12;
+    scheduleGlobeRender();
     requestAnimationFrame(spin);
   })();
 }
