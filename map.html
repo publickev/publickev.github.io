@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>World Map</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
@@ -68,7 +69,6 @@
     .star-b { animation: twinkle-b var(--dur) ease-in-out infinite; }
     .star-c { animation: twinkle-c var(--dur) ease-in-out infinite; }
 
-    /* ── Flat sphere outline (warm brown border, parchment theme) ── */
     .flat-outline { fill: none; stroke: rgba(120,90,40,0.35); stroke-width: 1.2; }
 
     /* ── Toggle button ── */
@@ -83,7 +83,6 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
     }
     
-    /* MOBILE OPTIMIZATION: Bigger button for touch screens */
     @media (max-width: 640px) {
       #toggle-btn {
         top: 20px; right: 20px;
@@ -97,7 +96,6 @@
     body.mode-globe #toggle-btn { background: rgba(255,255,255,0.15); color: #deeeff; }
     #toggle-btn:hover { transform: scale(1.04); }
 
-    /* ── Hint ── */
     #hint {
       position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -161,10 +159,10 @@
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS & DATA
 ═══════════════════════════════════════════════════════════ */
-const isMobile  = window.innerWidth < 640;
 const W = window.innerWidth, H = window.innerHeight;
-const DOT_R     = isMobile ? 7 : 5;
-const FONT_SIZE = isMobile ? 17 : 13;
+// Set to original small sizes for better initial display on mobile viewport
+const DOT_R     = 5; 
+const FONT_SIZE = 13;
 const PAD_X = 5, PAD_Y = 3;
 const LDX = DOT_R + 6;   
 const LDY = -FONT_SIZE * 0.6;
@@ -279,22 +277,29 @@ function initFlatMap(countries) {
 
 function updateFlatMarkers() {
   const k = flatT.k;
-  const invK = 1 / k;
+  // Use k as a divisor to prevent markers from blowing up in size when zooming
+  const invK = 1 / k; 
+  
   const positions = MARKERS.map(d => {
     const [px, py] = flatProj(d.coords);
     const vis = labelVisible(d.p, k);
+    // Scale box dimensions and offsets by invK so they stay visually constant
     const lw = d._tw ? (d._tw + PAD_X*2) * invK : 80 * invK;
     const lh = d._th ? (d._th + PAD_Y*2) * invK : 20 * invK;
     const ldx = LDX * invK;
     const ldy = LDY * invK;
     return { d, px, py, lx: px + ldx, ly: py + ldy - lh/2, lw, lh, vis, invK };
   });
+  
   resolveCollisions(positions);
+  
   flatMG.selectAll('.marker').each(function(d, i) {
     const inf = positions[i];
     const g = d3.select(this);
     g.attr('transform', `translate(${inf.px},${inf.py})`);
-    g.select('.marker-dot').attr('r', DOT_R * invK).style('stroke-width', 1.5 * invK);
+    
+    // Scale the dot and its stroke inversely to the zoom level
+    g.select('.marker-dot').attr('r', DOT_R * inf.invK).style('stroke-width', 1.5 * inf.invK);
 
     const lg = g.select('.label-group');
     lg.style('opacity', inf.vis ? 1 : 0);
@@ -304,13 +309,13 @@ function updateFlatMarkers() {
     const ry = inf.ly - inf.py;
 
     lg.select('.leader-line')
-      .attr('x1', DOT_R * invK * 0.7).attr('y1', 0)
+      .attr('x1', (DOT_R * inf.invK) * 0.7).attr('y1', 0)
       .attr('x2', rx).attr('y2', ry + inf.lh / 2)
-      .style('stroke-width', 0.8 * invK)
-      .style('stroke-dasharray', `${3 * invK} ${2 * invK}`);
+      .style('stroke-width', 0.8 * inf.invK)
+      .style('stroke-dasharray', `${3 * inf.invK} ${2 * inf.invK}`);
 
     const cg = lg.select('.label-content');
-    cg.attr('transform', `translate(${rx},${ry}) scale(${invK})`);
+    cg.attr('transform', `translate(${rx},${ry}) scale(${inf.invK})`);
     cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',(d._tw||0)+PAD_X*2).attr('height',(d._th||0)+PAD_Y*2);
     cg.select('text').attr('x',0).attr('y',(d._th||FONT_SIZE)/2);
   });
@@ -386,7 +391,6 @@ function updateGlobeMarkers() {
   });
 }
 
-/* ── UPDATED GLOBE INTERACTIONS: DRAG + PINCH ZOOM ── */
 let dragStart = null, rotStart = null;
 let lastPinchDist = null;
 
@@ -399,10 +403,8 @@ function onDown(e) {
   e.preventDefault(); autoSpin = false;
 
   if (e.touches && e.touches.length === 2) {
-    // Start Pinch
     lastPinchDist = getDist(e.touches[0], e.touches[1]);
   } else {
-    // Start Drag
     const p = e.touches ? e.touches[0] : e;
     dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
   }
@@ -415,8 +417,6 @@ function onDown(e) {
 
 function onMove(e) {
   e.preventDefault();
-
-  // Pinch Logic
   if (e.touches && e.touches.length === 2) {
     const dist = getDist(e.touches[0], e.touches[1]);
     if (lastPinchDist) {
@@ -427,8 +427,6 @@ function onMove(e) {
     lastPinchDist = dist;
     return;
   }
-
-  // Rotation Logic
   if (!dragStart) return;
   const p = e.touches ? e.touches[0] : e;
   const dx = p.clientX - dragStart[0], dy = p.clientY - dragStart[1];
