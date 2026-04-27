@@ -160,7 +160,6 @@
    CONSTANTS & DATA
 ═══════════════════════════════════════════════════════════ */
 const W = window.innerWidth, H = window.innerHeight;
-// Set to original small sizes for better initial display on mobile viewport
 const DOT_R     = 5; 
 const FONT_SIZE = 13;
 const PAD_X = 5, PAD_Y = 3;
@@ -277,13 +276,11 @@ function initFlatMap(countries) {
 
 function updateFlatMarkers() {
   const k = flatT.k;
-  // Use k as a divisor to prevent markers from blowing up in size when zooming
   const invK = 1 / k; 
   
   const positions = MARKERS.map(d => {
     const [px, py] = flatProj(d.coords);
     const vis = labelVisible(d.p, k);
-    // Scale box dimensions and offsets by invK so they stay visually constant
     const lw = d._tw ? (d._tw + PAD_X*2) * invK : 80 * invK;
     const lh = d._th ? (d._th + PAD_Y*2) * invK : 20 * invK;
     const ldx = LDX * invK;
@@ -297,8 +294,6 @@ function updateFlatMarkers() {
     const inf = positions[i];
     const g = d3.select(this);
     g.attr('transform', `translate(${inf.px},${inf.py})`);
-    
-    // Scale the dot and its stroke inversely to the zoom level
     g.select('.marker-dot').attr('r', DOT_R * inf.invK).style('stroke-width', 1.5 * inf.invK);
 
     const lg = g.select('.label-group');
@@ -373,21 +368,56 @@ function globeOnScreen(coords) {
 }
 
 function updateGlobeMarkers() {
-  globeMG.selectAll('.marker').each(function(d) {
-    const vis  = globeOnScreen(d.coords);
+  // Pre-calculate positions for collision check
+  const positions = MARKERS.map(d => {
+    const onScreen = globeOnScreen(d.coords);
     const proj = globeProj(d.coords);
-    if (!proj) return;
+    if (!proj || !onScreen) return { vis: false };
+    
     const [px, py] = proj;
+    const vis = labelVisible(d.p, gZoom);
+    const lw = (d._tw || 80) + PAD_X * 2;
+    const lh = (d._th || 20) + PAD_Y * 2;
+    
+    return {
+      d, vis, px, py, 
+      lx: px + LDX, 
+      ly: py + LDY - lh/2, 
+      lw, lh
+    };
+  });
+
+  resolveCollisions(positions);
+
+  globeMG.selectAll('.marker').each(function(d, i) {
+    const inf = positions[i];
     const g = d3.select(this);
-    g.attr('transform', `translate(${px},${py})`).style('opacity', vis?1:0).style('pointer-events', vis?null:'none');
-    const show = vis && labelVisible(d.p, gZoom);
-    g.select('.label-group').style('opacity', show ? 1 : 0);
-    if (!show || !d._tw) return;
-    const rx = LDX, ry = LDY - (d._th||FONT_SIZE)/2;
-    g.select('.leader-line').attr('x1', DOT_R*0.7).attr('y1',0).attr('x2',rx).attr('y2', ry+(d._th||FONT_SIZE)/2+PAD_Y);
-    const cg = g.select('.label-content').attr('transform',`translate(${rx},${ry})`);
-    cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',(d._tw||0)+PAD_X*2).attr('height',(d._th||0)+PAD_Y*2);
-    cg.select('text').attr('x',0).attr('y',(d._th||FONT_SIZE)/2);
+    
+    if (!inf.px) {
+      g.style('opacity', 0).style('pointer-events', 'none');
+      return;
+    }
+
+    g.attr('transform', `translate(${inf.px},${inf.py})`)
+     .style('opacity', 1)
+     .style('pointer-events', 'auto');
+
+    const lg = g.select('.label-group');
+    lg.style('opacity', inf.vis ? 1 : 0);
+
+    if (inf.vis && d._tw) {
+      const rx = inf.lx - inf.px;
+      const ry = inf.ly - inf.py;
+
+      lg.select('.leader-line')
+        .attr('x1', DOT_R * 0.7).attr('y1', 0)
+        .attr('x2', rx).attr('y2', ry + inf.lh/2);
+
+      const cg = lg.select('.label-content');
+      cg.attr('transform', `translate(${rx}, ${ry})`);
+      cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',d._tw+PAD_X*2).attr('height',d._th+PAD_Y*2);
+      cg.select('text').attr('x',0).attr('y',d._th/2);
+    }
   });
 }
 
