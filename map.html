@@ -8,7 +8,9 @@
   <script src="https://unpkg.com/topojson@3"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { overflow: hidden; background: #f5e6a8; }
+    /* No yellow parchment — each mode sets its own background */
+    body.mode-flat  { background: #ffffff; overflow: hidden; }
+    body.mode-globe { background: #0b1622; overflow: hidden; }
 
     #container {
       width: 100vw; height: 100vh;
@@ -159,7 +161,7 @@
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS & DATA
 ═══════════════════════════════════════════════════════════ */
-const W = window.innerWidth, H = window.innerHeight;
+let W = window.innerWidth, H = window.innerHeight;
 const DOT_R     = 5; 
 const FONT_SIZE = 13;
 const PAD_X = 5, PAD_Y = 3;
@@ -172,16 +174,16 @@ const HIGHLIGHT = new Set([
 ]);
 
 const MARKERS = [
-  { name:"福岡",                coords:[130.4017, 33.5902],  p:2 }, //Fukuoka
+  { name:"福岡",                coords:[130.4017, 33.5902],  p:2 },
   { name:"Melbourne",          coords:[144.9631,-37.8136],  p:3 },
-  { name:"奈良",                coords:[135.8048, 34.6851],  p:1 }, //Nara
-  { name:"神戸",                coords:[135.1955, 34.6901],  p:1 }, //Kobe
-  { name:"京都",                coords:[135.7681, 35.0116],  p:2 }, //Kyoto
-  { name:"大阪",                coords:[135.5023, 34.6937],  p:2 }, //Osaka
-  { name:"台州",                coords:[121.4208, 28.6564],  p:1 }, //Taizhou
-  { name:"宁波",                coords:[121.5503, 29.8746],  p:1 }, //Ningbo
-  { name:"上海",                coords:[121.4737, 31.2304],  p:3 }, //Shanghai
-  { name:"東京",                coords:[139.6503, 35.6762],  p:3 }, //Tokyo
+  { name:"奈良",                coords:[135.8048, 34.6851],  p:1 },
+  { name:"神戸",                coords:[135.1955, 34.6901],  p:1 },
+  { name:"京都",                coords:[135.7681, 35.0116],  p:2 },
+  { name:"大阪",                coords:[135.5023, 34.6937],  p:2 },
+  { name:"台州",                coords:[121.4208, 28.6564],  p:1 },
+  { name:"宁波",                coords:[121.5503, 29.8746],  p:1 },
+  { name:"上海",                coords:[121.4737, 31.2304],  p:3 },
+  { name:"東京",                coords:[139.6503, 35.6762],  p:3 },
   { name:"Singapore",          coords:[103.8198,  1.3521],  p:3 },
   { name:"Bucharest",          coords:[ 26.1025, 44.4268],  p:3 },
   { name:"Quito",              coords:[-78.4678, -0.1807],  p:3 },
@@ -190,12 +192,12 @@ const MARKERS = [
   { name:"Reykjavík",          coords:[-21.8174, 64.1265],  p:3 },
   { name:"Chicago",            coords:[-87.6298, 41.8781],  p:3 },
   { name:"Toronto",            coords:[-79.3832, 43.6532],  p:3 },
-  { name:"香港",                coords:[114.1694, 22.3193],  p:3 }, //Hong Kong
+  { name:"香港",                coords:[114.1694, 22.3193],  p:3 },
   { name:"San Francisco",      coords:[-122.4194,37.7749],  p:3 },
   { name:"Los Angeles",        coords:[-118.2437,34.0522],  p:3 },
-  { name:"부산",                coords:[129.0756, 35.1796],  p:2 }, //Busan
-  { name:"서울",                coords:[126.9780, 37.5665],  p:3 }, //Seoul
-  { name:"北京",                coords:[116.4074, 39.9042],  p:3 }, //Beijing
+  { name:"부산",                coords:[129.0756, 35.1796],  p:2 },
+  { name:"서울",                coords:[126.9780, 37.5665],  p:3 },
+  { name:"北京",                coords:[116.4074, 39.9042],  p:3 },
   { name:"New York City",      coords:[-74.0060, 40.7128],  p:3 },
   { name:"Great Barrier Reef", coords:[147.6992,-18.2871],  p:2 },
   { name:"Madawaska",          coords:[-77.99, 45.50],      p:1 },
@@ -212,8 +214,9 @@ function cfill(name) {
 /* ═══════════════════════════════════════════════════════════
    STARS
 ═══════════════════════════════════════════════════════════ */
-(function generateStars() {
+function generateStars() {
   const starLayer = d3.select('#stars');
+  starLayer.selectAll('*').remove();
   const classes   = ['star-a', 'star-b', 'star-c'];
   const rand      = (a, b) => a + Math.random() * (b - a);
   const COUNT     = 320;
@@ -237,7 +240,8 @@ function cfill(name) {
       .style('--dur', dur)
       .style('animation-delay', del);
   }
-})();
+}
+generateStars();
 
 /* ═══════════════════════════════════════════════════════════
    FLAT MAP
@@ -325,15 +329,16 @@ const globeCG   = d3.select('#globe-countries');
 const globeMG   = d3.select('#globe-markers');
 const globeGrat = d3.select('#globe-graticule');
 
-const GLOBE_R0 = Math.min(W, H) / 2.1;
 let gRotate = [-20, -25, 0];
 let gZoom   = 1;
 let autoSpin = false;
 
 const globeProj = d3.geoOrthographic().clipAngle(90).precision(0.5);
 
+function getGlobeR0() { return Math.min(W, H) / 2.1; }
+
 function setGlobeCircles() {
-  const r = GLOBE_R0 * gZoom;
+  const r = getGlobeR0() * gZoom;
   const cx = W/2, cy = H/2;
   globeProj.scale(r).translate([cx, cy]).rotate(gRotate);
   ['#globe-ocean','#globe-sheen','#globe-rim'].forEach(id =>
@@ -369,7 +374,6 @@ function globeOnScreen(coords) {
 }
 
 function updateGlobeMarkers() {
-  // Pre-calculate positions for collision check
   const positions = MARKERS.map(d => {
     const onScreen = globeOnScreen(d.coords);
     const proj = globeProj(d.coords);
@@ -526,6 +530,39 @@ function resolveCollisions(positions) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   RESIZE / ORIENTATION HANDLER
+═══════════════════════════════════════════════════════════ */
+let resizeTimer = null;
+function onResize() {
+  clearTimeout(resizeTimer);
+  // Small debounce so we don't fire 20x during the rotation animation
+  resizeTimer = setTimeout(() => {
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    // Update flat projection
+    flatProj.scale(W / 6.5).translate([W/2, H/2]);
+    d3.select('#flat-sphere-fill').attr('d', flatPath);
+    d3.select('#flat-outline').attr('d', flatPath);
+    flatCG.selectAll('path').attr('d', flatPath);
+
+    // Reset zoom transform so the map re-centers properly
+    flatT = d3.zoomIdentity;
+    flatZoom.translateExtent([[0,0],[W,H]]);
+    flatSvg.call(flatZoom.transform, flatT);
+    updateFlatMarkers();
+
+    // Update globe
+    generateStars();
+    renderGlobe();
+  }, 120);
+}
+
+window.addEventListener('resize', onResize);
+// Also listen for orientationchange for older iOS
+window.addEventListener('orientationchange', () => setTimeout(onResize, 200));
+
+/* ═══════════════════════════════════════════════════════════
    MODE TOGGLE
 ═══════════════════════════════════════════════════════════ */
 let mode = 'flat';
@@ -574,10 +611,15 @@ document.getElementById('toggle-btn').addEventListener('click', () => {
   if (mode === 'flat') switchToGlobe(); else switchToFlat();
 });
 
+/* ═══════════════════════════════════════════════════════════
+   LOAD DATA
+═══════════════════════════════════════════════════════════ */
+let loadedCountries = null;
+
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(world => {
-  const countries = topojson.feature(world, world.objects.countries).features;
-  initFlatMap(countries);
-  initGlobe(countries);
+  loadedCountries = topojson.feature(world, world.objects.countries).features;
+  initFlatMap(loadedCountries);
+  initGlobe(loadedCountries);
   flatSvg.call(flatZoom);
   updateFlatMarkers();
 });
