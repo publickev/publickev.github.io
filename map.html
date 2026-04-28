@@ -23,7 +23,8 @@
       width: 100%; height: 100%;
     }
     #flat-svg  { background: #ffffff; display: block; }
-    #globe-svg { background: #0b1622; display: none; }
+    #globe-svg { background: #0b1622; display: none; cursor: grab; }
+    #globe-svg.grabbing { cursor: grabbing; }
 
     /* ── Shared country styles ── */
     .country { stroke: #fff; stroke-width: 0.4; }
@@ -42,7 +43,6 @@
     .marker-dot {
       fill: #e03030; stroke: #fff; stroke-width: 2;
       filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
-      cursor: pointer;
     }
     .label-text {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -122,6 +122,7 @@
       <path id="flat-outline" class="flat-outline"/>
       <g id="flat-markers">
         <g id="flat-marker-dots"></g>
+        <g id="flat-marker-lines"></g>
         <g id="flat-marker-labels"></g>
       </g>
     </g>
@@ -154,6 +155,7 @@
                                     filter:drop-shadow(0 0 9px rgba(80,160,255,0.85))"/>
     <g id="globe-markers">
       <g id="globe-marker-dots"></g>
+      <g id="globe-marker-lines"></g>
       <g id="globe-marker-labels"></g>
     </g>
   </svg>
@@ -269,6 +271,7 @@ const flatSvg    = d3.select('#flat-svg');
 const flatZoomG  = d3.select('#flat-zoom-group');
 const flatCG     = d3.select('#flat-countries');
 const flatMDotsG  = d3.select('#flat-marker-dots');
+const flatMLinesG = d3.select('#flat-marker-lines');
 const flatMLabsG  = d3.select('#flat-marker-labels');
 
 const flatProj = d3.geoNaturalEarth1().scale(W / 6.5).translate([W/2, H/2]);
@@ -294,7 +297,7 @@ function initFlatMap(countries) {
     .attr('fill', d => cfill(d.properties && d.properties.name))
     .attr('d', flatPath);
 
-  buildMarkers(flatMDotsG, flatMLabsG);
+  buildMarkers(flatMDotsG, flatMLinesG, flatMLabsG);
   flatSvg.call(flatZoom);
   updateFlatMarkers();
 }
@@ -325,7 +328,26 @@ function updateFlatMarkers() {
       .style('stroke-width', 1.5 * inf.invK);
   });
 
-  // Update labels
+  // Update lines (sit below all label boxes)
+  flatMLinesG.selectAll('.marker-line-group').each(function(d, i) {
+    const inf = positions[i];
+    const lg = d3.select(this);
+    lg.attr('transform', `translate(${inf.px},${inf.py})`);
+    if (!inf.vis || !d._tw) {
+      lg.style('opacity', 0);
+      return;
+    }
+    lg.style('opacity', 1);
+    const rx = inf.lx - inf.px;
+    const ry = inf.ly - inf.py;
+    lg.select('.leader-line')
+      .attr('x1', (DOT_R * inf.invK) * 0.7).attr('y1', 0)
+      .attr('x2', rx).attr('y2', ry + inf.lh / 2)
+      .style('stroke-width', 0.8 * inf.invK)
+      .style('stroke-dasharray', `${3 * inf.invK} ${2 * inf.invK}`);
+  });
+
+  // Update label boxes (sit above all lines)
   flatMLabsG.selectAll('.marker-label').each(function(d, i) {
     const inf = positions[i];
     const lg = d3.select(this);
@@ -335,12 +357,6 @@ function updateFlatMarkers() {
 
     const rx = inf.lx - inf.px;
     const ry = inf.ly - inf.py;
-
-    lg.select('.leader-line')
-      .attr('x1', (DOT_R * inf.invK) * 0.7).attr('y1', 0)
-      .attr('x2', rx).attr('y2', ry + inf.lh / 2)
-      .style('stroke-width', 0.8 * inf.invK)
-      .style('stroke-dasharray', `${3 * inf.invK} ${2 * inf.invK}`);
 
     const cg = lg.select('.label-content');
     cg.attr('transform', `translate(${rx},${ry}) scale(${inf.invK})`);
@@ -354,13 +370,15 @@ function updateFlatMarkers() {
 ═══════════════════════════════════════════════════════════ */
 const globeSvg   = d3.select('#globe-svg');
 const globeCG    = d3.select('#globe-countries');
-const globeMDotsG = d3.select('#globe-marker-dots');
-const globeMLabsG = d3.select('#globe-marker-labels');
+const globeMDotsG  = d3.select('#globe-marker-dots');
+const globeMLinesG = d3.select('#globe-marker-lines');
+const globeMLabsG  = d3.select('#globe-marker-labels');
 const globeGrat  = d3.select('#globe-graticule');
 
 let gRotate = [-20, -25, 0];
 let gZoom   = 1;
 let autoSpin = false;
+let idleTimer = null;
 
 const globeProj = d3.geoOrthographic().clipAngle(90).precision(0.5);
 const globePath = d3.geoPath(globeProj); // cached — reused every frame
@@ -400,7 +418,7 @@ function initGlobe(countries) {
   globeCG.selectAll('path').data(countries).enter().append('path')
     .attr('class','country')
     .attr('fill', d => cfill(d.properties && d.properties.name));
-  buildMarkers(globeMDotsG, globeMLabsG);
+  buildMarkers(globeMDotsG, globeMLinesG, globeMLabsG);
   renderGlobe();
 }
 
@@ -442,11 +460,27 @@ function updateGlobeMarkers() {
      .style('pointer-events', 'auto');
   });
 
-  // Update labels
+  // Update lines (sit below all label boxes)
+  globeMLinesG.selectAll('.marker-line-group').each(function(d, i) {
+    const inf = positions[i];
+    const lg = d3.select(this);
+    if (inf.hidden || !inf.vis || !d._tw) {
+      lg.style('opacity', 0);
+      return;
+    }
+    lg.attr('transform', `translate(${inf.px},${inf.py})`).style('opacity', 1);
+    const rx = inf.lx - inf.px;
+    const ry = inf.ly - inf.py;
+    lg.select('.leader-line')
+      .attr('x1', DOT_R * 0.7).attr('y1', 0)
+      .attr('x2', rx).attr('y2', ry + inf.lh / 2);
+  });
+
+  // Update label boxes (sit above all lines)
   globeMLabsG.selectAll('.marker-label').each(function(d, i) {
     const inf = positions[i];
     const lg = d3.select(this);
-    
+
     if (inf.hidden) {
       lg.style('opacity', 0).style('pointer-events', 'none');
       return;
@@ -460,10 +494,6 @@ function updateGlobeMarkers() {
       const rx = inf.lx - inf.px;
       const ry = inf.ly - inf.py;
 
-      lg.select('.leader-line')
-        .attr('x1', DOT_R * 0.7).attr('y1', 0)
-        .attr('x2', rx).attr('y2', ry + inf.lh/2);
-
       const cg = lg.select('.label-content');
       cg.attr('transform', `translate(${rx}, ${ry})`);
       cg.select('rect').attr('x',-PAD_X).attr('y',-PAD_Y).attr('width',d._tw+PAD_X*2).attr('height',d._th+PAD_Y*2);
@@ -472,7 +502,27 @@ function updateGlobeMarkers() {
   });
 }
 
-let dragStart = null, rotStart = null;
+function startSpinLoop() {
+  (function spin() {
+    if (!autoSpin || mode !== 'globe') return;
+    gRotate[0] += 0.12;
+    scheduleGlobeRender();
+    requestAnimationFrame(spin);
+  })();
+}
+
+function resetIdleTimer() {
+  autoSpin = false;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (mode === 'globe') {
+      autoSpin = true;
+      startSpinLoop();
+    }
+  }, 7000);
+}
+
+
 let lastPinchDist = null;
 
 function getDist(t1, t2) {
@@ -481,7 +531,9 @@ function getDist(t1, t2) {
 
 function onDown(e) {
   if (e.button && e.button !== 0) return;
-  e.preventDefault(); autoSpin = false;
+  e.preventDefault();
+  autoSpin = false;
+  clearTimeout(idleTimer);
 
   if (e.touches && e.touches.length === 2) {
     lastPinchDist = getDist(e.touches[0], e.touches[1]);
@@ -489,6 +541,7 @@ function onDown(e) {
     const p = e.touches ? e.touches[0] : e;
     dragStart = [p.clientX, p.clientY]; rotStart = [...gRotate];
   }
+  document.getElementById('globe-svg').classList.add('grabbing');
 
   window.addEventListener('mousemove', onMove, {passive:false});
   window.addEventListener('touchmove', onMove, {passive:false});
@@ -519,6 +572,8 @@ function onMove(e) {
 function onUp() {
   dragStart = null;
   lastPinchDist = null;
+  document.getElementById('globe-svg').classList.remove('grabbing');
+  resetIdleTimer();
   window.removeEventListener('mousemove', onMove);
   window.removeEventListener('touchmove', onMove);
   window.removeEventListener('mouseup',   onUp);
@@ -534,20 +589,25 @@ function onWheel(e) {
 /* ═══════════════════════════════════════════════════════════
    SHARED MARKER BUILDER
 ═══════════════════════════════════════════════════════════ */
-function buildMarkers(dotsContainer, labelsContainer) {
-  // ── Dots layer (rendered below labels) ──
+function buildMarkers(dotsContainer, linesContainer, labelsContainer) {
+  // ── Dots layer ──
   dotsContainer.selectAll('.marker-dot-wrap')
     .data(MARKERS).enter()
     .append('g').attr('class', 'marker-dot-wrap')
     .append('circle').attr('class', 'marker-dot')
     .attr('r', DOT_R).style('stroke-width', 1.5);
 
-  // ── Labels layer (rendered above dots) ──
+  // ── Lines layer (rendered below all label boxes) ──
+  linesContainer.selectAll('.marker-line-group')
+    .data(MARKERS).enter()
+    .append('g').attr('class', 'marker-line-group')
+    .append('line').attr('class', 'leader-line').attr('x1', 0).attr('y1', 0);
+
+  // ── Label boxes layer (rendered above all lines) ──
   const lgs = labelsContainer.selectAll('.marker-label')
     .data(MARKERS).enter()
     .append('g').attr('class', 'marker-label');
 
-  lgs.append('line').attr('class', 'leader-line').attr('x1', 0).attr('y1', 0);
   lgs.append('g').attr('class', 'label-content')
     .append('text').attr('class', 'label-text')
     .style('font-size', `${FONT_SIZE}px`).text(d => d.name);
@@ -639,12 +699,7 @@ function switchToGlobe() {
   gs.addEventListener('wheel',      onWheel,{passive:false});
   
   autoSpin = true;
-  (function spin() {
-    if (!autoSpin || mode !== 'globe') return;
-    gRotate[0] += 0.12;
-    scheduleGlobeRender();
-    requestAnimationFrame(spin);
-  })();
+  startSpinLoop();
 }
 
 function switchToFlat() {
@@ -655,7 +710,7 @@ function switchToFlat() {
   document.getElementById('toggle-btn').textContent  = '🌍 Globe View';
   document.getElementById('hint').textContent        = 'Scroll to zoom · Drag to pan';
   autoSpin = false;
-  
+  clearTimeout(idleTimer);
   const gs = document.getElementById('globe-svg');
   gs.removeEventListener('mousedown',  onDown);
   gs.removeEventListener('touchstart', onDown);
