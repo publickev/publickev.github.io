@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/bitmoji_square_transparent.png">
+  <title>Understanding Your Paycheck</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .article-body {
+      max-width: 680px;
+    }
+    .article-body h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-top: 2.2em;
+      margin-bottom: 0.4em;
+      line-height: 1.2;
+    }
+    .article-body h1:first-of-type {
+      margin-top: 0;
+    }
+    .article-body p {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--ink);
+      margin-bottom: 0.8em;
+    }
+    .article-body ul, .article-body ol {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--ink);
+      padding-left: 1.6em;
+      margin-bottom: 0.8em;
+    }
+    .article-body li {
+      margin-bottom: 0.3em;
+    }
+    .article-body li > ul {
+      margin-top: 0.3em;
+      margin-bottom: 0;
+    }
+    .article-body strong {
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .article-body em {
+      color: var(--ink-muted);
+      font-style: italic;
+    }
+    .article-body a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .article-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5em 0;
+    }
+    .article-recap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-top: 2em;
+    }
+    .article-recap p {
+      margin-bottom: 0.4em;
+    }
+    .article-recap p:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <script src="header.js"></script>
+
+  <main>
+    <a href="finance.html" class="back-link">← Back</a>
+    <h1 class="page-title">Understanding Your Paycheck</h1>
+    <p class="page-subtitle">Exempt vs non-exempt, pay cycles, taxes, and deductions</p>
+
+    <div class="article-body">
+
+      <h1>Exempt or Non-Exempt Employee</h1>
+      <p>Are you an <strong>exempt</strong> or a <strong>non-exempt</strong> worker?</p>
+      <p>To clarify, this question is asking if you are, according to the <a href="https://en.wikipedia.org/wiki/Fair_Labor_Standards_Act_of_1938">Fair Labor Standards Act of 1938</a>, considered an employee that is <strong>exempt from overtime pay</strong> or <strong>non-exempt from overtime pay</strong>.</p>
+      <p>If you're working some kind of <strong>office, white-collar job</strong> and your pay was listed as <strong>$X amount/yr</strong>, you're probably an <strong>exempt</strong> worker and won't get any additional pay for working more than 40 hours a week.</p>
+      <p>If you're working some kind of <strong>retail, labor, blue-collar type of job</strong> and your pay was listed as something like <strong>$X amount/hr with overtime</strong>, you might be considered a <strong>non-exempt worker</strong> and might be paid extra if you work more than 40 hours a week.</p>
+      <p>So what <strong>exempt, non-exempt</strong> really means is <strong>are you entitled to overtime pay or not</strong>.</p>
+      <ul>
+        <li><em>If you get paid $60/hr and you worked 41 hours for the week, you get $90 for that extra hour as a non-exempt employee — the rate for overtime pay is 1.5x the normal rate.</em></li>
+        <li><em>An exempt employee doesn't get paid anything for the extra hour of work.</em></li>
+      </ul>
+
+      <hr class="article-divider">
+
+      <h1>Pay Cycles</h1>
+      <p>Are you paid <strong>bi-weekly</strong> (every 2 weeks) or <strong>semi-monthly</strong> (twice a month)?</p>
+      <p>With <strong>semi-monthly</strong>, you're guaranteed <strong>two paychecks a month</strong> (24 payments a year). You usually get paid on the <strong>15th</strong> (for time worked between the 1st–15th) and on the <strong>last day</strong> of each month (for time worked between the 16th and month end). Just divide your annual salary by 24 to get what to expect per paycheck.</p>
+      <ul>
+        <li>If you make $100,000/yr, expect <strong>$4,166.67/paycheck</strong> in gross earnings (before taxes and deductions).</li>
+        <li>No one adjusts for the fact that some pay periods are slightly longer or shorter — each paycheck is the same gross amount.</li>
+      </ul>
+      <p>With <strong>bi-weekly</strong>, you typically get paid <strong>26 times a year</strong> (occasionally 27 in a long year). You work two weeks, then get paid for them during the following week.</p>
+      <ul>
+        <li>For example, if you worked Monday the 2nd through Friday the 13th, you'd get paid around Thursday the 19th or Friday the 20th.</li>
+      </ul>
+      <p>The employer takes your annual salary, divides by 52 weeks, then divides again by 40 hours to get your hourly rate. They multiply that rate by 80 hours for your gross bi-weekly earnings.</p>
+      <ul>
+        <li>If you make $100,000/yr, your hourly rate is $48.08/hr — expect <strong>$3,846.15/paycheck</strong> in gross earnings.</li>
+        <li>Some employers divide by <a href="https://www.opm.gov/policy-data-oversight/pay-leave/pay-administration/fact-sheets/computing-hourly-rates-of-pay-using-the-2087-hour-divisor/">2,087</a> instead of 2,080.</li>
+      </ul>
+
+      <hr class="article-divider">
+
+      <h1>Pre-Tax Deductions</h1>
+      <p>Did you sign up for any benefits with your employer? Maybe you have a traditional 401(k) with your employer? Most benefits and traditional 401(k) retirement contributions would be considered pre-tax deductions on your paycheck. These are deductions that lessen your take home pay but are tax-free (except for traditional 401(k) contributions - you just pay taxes on those later, when you’re an old fart).</p>
+      <p>Some examples of pre-tax deductions:</p>
+      <ul>
+        <li>Employer-sponsored medical, dental, and vision insurance</li>
+        <li>Health Savings Account (HSA) contributions</li>
+        <li>Transit/Commuter benefits</li>
+        <li>Traditional 401(k) contributions</li>
+      </ul>
+      <p>So if you got a paycheck that said you earned $1,000 working but you also have medical insurance which costs $15 per paycheck and you also contribute $100 per paycheck to your traditional 401(k), your total pre-tax deductions are $115 and your taxable income is $885. You don’t pay taxes on the $15 at all and you don’t pay taxes on the $100 now, but you will in like 40 years when you take the money out of your retirement account.</p>
+
+      <hr class="article-divider">
+
+      <h1>Tax Withholdings on Pay</h1>
+      <p>Basically, your employer will take money out of each paycheck and send that tax money to the government. No one knows exactly how much you owe to the government until the end of the year because your income, financial situation, filing status, and other factors may change during the year, which would change the amount of taxes you owe. Typically, employers will try to be a bit conservative and will make sure that they deduct enough money so that you won’t end up owing the government more money when Tax Day on April 15th rolls around.</p>
+      <p>You’d need to pay:</p>
+      <ul>
+        <li><strong>Social Security Tax — 6.2%</strong> on earnings.
+          <ul>
+            <li>You’re paying for the Old-Age, Survivors, and Disability Insurance (OASDI) program which basically is monthly income for old, retired, and disabled people.</li>
+          </ul>
+        </li>
+        <li><strong>Medicare Tax — 1.45%</strong> on earnings (2.35% for salaries $200k+).
+          <ul>
+            <li>Basically you’re paying for health insurance for those same old, retired, and disabled people.</li>
+          </ul>
+        </li>
+        <li><strong>Federal Income Tax</strong>
+          <ul>
+            <li>Progressive tax, meaning the more you earn, the more taxes you pay</li>
+            <li>You’re paying to support federal government programs and federal government workers</li>
+          </ul>
+        </li>
+        <li><strong>State Income Tax</strong>
+          <ul>
+            <li>Depends on the state you live and work in - some states have no income tax.</li>
+            <ul><li>Illinois State Income Tax is 4.95%</li></ul>
+            <li>You’re paying to support state-level government programs and state workers.</li>
+          </ul>
+        </li>
+        <li><strong>Local/City/County Tax</strong>
+          <ul>
+            <li>Depends on where you live - you may or may not have to pay this tax.</li>
+            <ul><li>New York City has a progressive city income tax.</li></ul>
+            <li>You’re paying to support your local government programs and workers</li>
+          </ul>
+        </li>
+      </ul>
+      <p>Tax calculations are based on your earnings <em>after</em> pre-tax deductions. For example, using the numbers from earlier, your Social Security tax would be $885 × 6.2% = <strong>$54.87</strong>.</p>
+      <p>Let’s say, after doing all the calculations, you owe a total of <strong>$250</strong> in taxes. Your employer will deduct that from your $885 and send that $250 off to the government, leaving you with <strong>$635</strong>.</p>
+
+      <hr class="article-divider">
+
+      <h1>Post-Tax Deductions</h1>
+      <p>These are deductions from what's left after pre-tax deductions and tax withholdings. Two examples of post-tax deductions are:</p>
+      <ul>
+        <li><strong>Roth 401(k) contributions</strong>
+          <ul><li>$ amount you chose to put into your retirement, but you paid taxes on this money now, which is why it’s a post-tax deduction.</li></ul>
+        </li>
+        <li>For New York, there's <strong>New York Paid Family Leave (NYPFL)</strong> which is 0.432% of your gross pay, per paycheck, up to the $411.91 annual cap.</li>
+      </ul>
+      <p>Continuing the earlier example, maybe you decide that you want to put another $100 into a Roth 401(k) as well. If so, take the $635, subtract $100 from it, and you’re only left with <strong>$535</strong> to take home. Brutal, that’s like half the money you earned. A lot of it goes to taxes, which is why you should make sure the government is running the way you want it to - you’re already paying for it anyways.</p>
+
+      <hr class="article-divider">
+
+      <h1>Quick Recap of Paycheck Calculations</h1>
+      <div class="article-recap">
+        <p>- Start with <strong>gross/earned pay</strong></p>
+        <p>- Subtract <strong>pre-tax deductions</strong></p>
+        <p>- Calculate and subtract the amount you owe in<strong>taxes</strong></p>
+        <p>- Subtract your <strong>post-tax deductions</strong></p>
+        <p>- What's left is your <strong>take home pay</strong>, the amount you get to keep and spend freely</p>
+      </div>
+
+      <hr class="article-divider">
+
+      <h1>Getting Your $$$🤑🤑🤑</h1>
+      <p>Enroll in <strong>direct deposit</strong> by giving your employer your bank information and your employer will send money straight to your account on payday. You should still review your paystubs though to make sure you fully understand your income.</p>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">publickev.com</footer>
+</body>
+</html>
